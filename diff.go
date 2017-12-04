@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strings"
 )
 
 var (
@@ -75,7 +76,7 @@ func (cl *Changelog) diffStruct(path []string, a, b reflect.Value) error {
 		af := a.Field(i)
 		bf := b.FieldByName(name)
 
-		fpath := append(path, name)
+		fpath := append(path, tagName(a, i))
 
 		err := cl.diff(fpath, af, bf)
 		if err != nil {
@@ -106,11 +107,35 @@ func (cl *Changelog) diffSlice(path []string, a, b reflect.Value) error {
 
 		switch ae.Kind() {
 		case reflect.Struct:
-			for x := 0; x < ae.NumField(); x++ {
-				// get struct tags to compare items with identifiers.
-				ae.Field(x)
+			id := identifier(ae)
+			if id != nil {
+				x := c[id]
+				x.A = &ae
 			}
+		default:
+			fmt.Println(ae.Interface())
+			//cl.diff(path, a, b)
 		}
+	}
+
+	for i := 0; i < b.Len(); i++ {
+		be := b.Index(i)
+
+		switch be.Kind() {
+		case reflect.Struct:
+			id := identifier(be)
+			if id != nil {
+				x := c[id]
+				x.B = &be
+			}
+		default:
+			fmt.Println(be.Interface())
+			//cl.diff(path, a, b)
+		}
+	}
+
+	for k, v := range c {
+
 	}
 
 	return nil
@@ -144,6 +169,38 @@ func (cl *Changelog) diffBool(path []string, a, b reflect.Value) error {
 func (cl *Changelog) diffInt(path []string, a, b reflect.Value) error {
 	if a.Kind() != b.Kind() {
 		return ErrTypeMismatch
+	}
+
+	return nil
+}
+
+func tag(v reflect.Value, i int) string {
+	return v.Type().Field(i).Tag.Get("diff")
+}
+
+func tagName(v reflect.Value, i int) string {
+	t := tag(v, i)
+
+	parts := strings.Split(t, ",")
+	if len(parts) < 1 {
+		return ""
+	}
+
+	return parts[0]
+}
+
+func identifier(v reflect.Value) interface{} {
+	for i := 0; i < v.NumField(); i++ {
+		t := tag(v, i)
+
+		parts := strings.Split(t, ",")
+		if len(parts) < 1 {
+			continue
+		}
+
+		if parts[1] == "identifier" {
+			return v.Field(i).Interface()
+		}
 	}
 
 	return nil
