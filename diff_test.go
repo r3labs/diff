@@ -12,12 +12,13 @@ type tistruct struct {
 }
 
 type tstruct struct {
-	Name          string     `diff:"name"`
-	Value         int        `diff:"value"`
-	Bool          bool       `diff:"bool"`
-	Values        []string   `diff:"values"`
-	Ignored       bool       `diff:"-"`
-	Identifiables []tistruct `diff:"identifiables"`
+	Name          string            `diff:"name"`
+	Value         int               `diff:"value"`
+	Bool          bool              `diff:"bool"`
+	Values        []string          `diff:"values"`
+	Map           map[string]string `diff:"map"`
+	Ignored       bool              `diff:"-"`
+	Identifiables []tistruct        `diff:"identifiables"`
 }
 
 func TestDiff(t *testing.T) {
@@ -89,6 +90,62 @@ func TestDiff(t *testing.T) {
 			"comparable-slice-update", []tistruct{{"one", 1}}, []tistruct{{"one", 50}},
 			Changelog{
 				Change{Type: UPDATE, Path: []string{"one", "value"}, From: 1, To: 50},
+			},
+			nil,
+		},
+		{
+			"struct-string-update", tstruct{Name: "one"}, tstruct{Name: "two"},
+			Changelog{
+				Change{Type: UPDATE, Path: []string{"name"}, From: "one", To: "two"},
+			},
+			nil,
+		},
+		{
+			"struct-int-update", tstruct{Value: 1}, tstruct{Value: 50},
+			Changelog{
+				Change{Type: UPDATE, Path: []string{"value"}, From: 1, To: 50},
+			},
+			nil,
+		},
+		{
+			"struct-bool-update", tstruct{Bool: true}, tstruct{Bool: false},
+			Changelog{
+				Change{Type: UPDATE, Path: []string{"bool"}, From: true, To: false},
+			},
+			nil,
+		},
+		{
+			"struct-map-update", tstruct{Map: map[string]string{"test": "123"}}, tstruct{Map: map[string]string{"test": "456"}},
+			Changelog{
+				Change{Type: UPDATE, Path: []string{"map"}, From: map[string]string{"test": "123"}, To: map[string]string{"test": "456"}},
+			},
+			nil,
+		},
+		{
+			"struct-generic-slice-insert", tstruct{Values: []string{"one"}}, tstruct{Values: []string{"one", "two"}},
+			Changelog{
+				Change{Type: CREATE, Path: []string{"values", "1"}, From: nil, To: "two"},
+			},
+			nil,
+		},
+		{
+			"struct-identifiable-slice-insert", tstruct{Identifiables: []tistruct{{"one", 1}}}, tstruct{Identifiables: []tistruct{{"one", 1}, {"two", 2}}},
+			Changelog{
+				Change{Type: CREATE, Path: []string{"identifiables", "two"}, From: nil, To: tistruct{"two", 2}},
+			},
+			nil,
+		},
+		{
+			"struct-generic-slice-delete", tstruct{Values: []string{"one", "two"}}, tstruct{Values: []string{"one"}},
+			Changelog{
+				Change{Type: DELETE, Path: []string{"values", "1"}, From: "two", To: nil},
+			},
+			nil,
+		},
+		{
+			"struct-identifiable-slice-delete", tstruct{Identifiables: []tistruct{{"one", 1}, {"two", 2}}}, tstruct{Identifiables: []tistruct{{"one", 1}}},
+			Changelog{
+				Change{Type: DELETE, Path: []string{"identifiables", "two"}, From: tistruct{"two", 2}, To: nil},
 			},
 			nil,
 		},
