@@ -2,14 +2,23 @@ package diff
 
 import (
 	"errors"
-	"fmt"
 	"reflect"
+	"strconv"
 	"strings"
 )
 
 var (
 	// ErrTypeMismatch : Compared types do not match
 	ErrTypeMismatch = errors.New("types do not match")
+)
+
+const (
+	// CREATE : represents when an element has been added
+	CREATE = "create"
+	// UPDATE : represents when an element has been updated
+	UPDATE = "update"
+	// DELETE : represents when an element has been removed
+	DELETE = "delete"
 )
 
 // Changelog : stores a list of changed items
@@ -46,8 +55,6 @@ func (cl *Changelog) diff(path []string, a, b reflect.Value) error {
 	switch a.Kind() {
 	case reflect.Struct:
 		err = cl.diffStruct(path, a, b)
-	case reflect.Array:
-		err = cl.diffArray(path, a, b)
 	case reflect.Slice:
 		err = cl.diffSlice(path, a, b)
 	case reflect.String:
@@ -56,6 +63,8 @@ func (cl *Changelog) diff(path []string, a, b reflect.Value) error {
 		err = cl.diffBool(path, a, b)
 	case reflect.Int:
 		err = cl.diffInt(path, a, b)
+	case reflect.Map:
+		err = cl.diffMap(path, a, b)
 	default:
 		err = errors.New("unsupported type: " + a.Kind().String())
 	}
@@ -63,115 +72,13 @@ func (cl *Changelog) diff(path []string, a, b reflect.Value) error {
 	return err
 }
 
-func (cl *Changelog) diffStruct(path []string, a, b reflect.Value) error {
-	if a.Kind() != b.Kind() {
-		return ErrTypeMismatch
-	}
-
-	fmt.Println(a.NumField())
-
-	for i := 0; i < a.NumField(); i++ {
-		name := a.Type().Field(i).Name
-
-		af := a.Field(i)
-		bf := b.FieldByName(name)
-
-		fpath := append(path, tagName(a, i))
-
-		err := cl.diff(fpath, af, bf)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (cl *Changelog) diffArray(path []string, a, b reflect.Value) error {
-	if a.Kind() != b.Kind() {
-		return ErrTypeMismatch
-	}
-
-	fmt.Println("ARRAY")
-
-	return nil
-}
-
-func (cl *Changelog) diffSlice(path []string, a, b reflect.Value) error {
-	if a.Kind() != b.Kind() {
-		return ErrTypeMismatch
-	}
-
-	for i := 0; i < a.Len(); i++ {
-		ae := a.Index(i)
-
-		switch ae.Kind() {
-		case reflect.Struct:
-			id := identifier(ae)
-			if id != nil {
-				x := c[id]
-				x.A = &ae
-			}
-		default:
-			fmt.Println(ae.Interface())
-			//cl.diff(path, a, b)
-		}
-	}
-
-	for i := 0; i < b.Len(); i++ {
-		be := b.Index(i)
-
-		switch be.Kind() {
-		case reflect.Struct:
-			id := identifier(be)
-			if id != nil {
-				x := c[id]
-				x.B = &be
-			}
-		default:
-			fmt.Println(be.Interface())
-			//cl.diff(path, a, b)
-		}
-	}
-
-	for k, v := range c {
-
-	}
-
-	return nil
-}
-
-func (cl *Changelog) diffString(path []string, a, b reflect.Value) error {
-	if a.Kind() != b.Kind() {
-		return ErrTypeMismatch
-	}
-
-	if a.String() != b.String() {
-		(*cl) = append((*cl), Change{
-			Type: "update",
-			Path: path,
-			From: a.Interface(),
-			To:   b.Interface(),
-		})
-	}
-
-	return nil
-}
-
-func (cl *Changelog) diffBool(path []string, a, b reflect.Value) error {
-	if a.Kind() != b.Kind() {
-		return ErrTypeMismatch
-	}
-
-	return nil
-}
-
-func (cl *Changelog) diffInt(path []string, a, b reflect.Value) error {
-	if a.Kind() != b.Kind() {
-		return ErrTypeMismatch
-	}
-
-	return nil
+func (cl *Changelog) add(t string, path []string, from, to interface{}) {
+	(*cl) = append((*cl), Change{
+		Type: t,
+		Path: path,
+		From: from,
+		To:   to,
+	})
 }
 
 func tag(v reflect.Value, i int) string {
@@ -204,4 +111,15 @@ func identifier(v reflect.Value) interface{} {
 	}
 
 	return nil
+}
+
+func idstring(v interface{}) string {
+	switch v.(type) {
+	case string:
+		return v.(string)
+	case int:
+		return strconv.Itoa(v.(int))
+	default:
+		return ""
+	}
 }
