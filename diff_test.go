@@ -92,6 +92,11 @@ func TestDiff(t *testing.T) {
 			},
 			nil,
 		},
+		{
+			"omittable", tstruct{Ignored: false}, tstruct{Ignored: true},
+			Changelog{},
+			nil,
+		},
 	}
 
 	for _, tc := range cases {
