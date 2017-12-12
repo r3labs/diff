@@ -42,7 +42,7 @@ func Changed(a, b interface{}) bool {
 	return len(cl) > 0
 }
 
-// Diff ...
+// Diff : returns a changelog of all mutated values from both
 func Diff(a, b interface{}) (Changelog, error) {
 	var cl Changelog
 
