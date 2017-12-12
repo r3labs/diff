@@ -17,8 +17,13 @@ type tstruct struct {
 	Bool          bool              `diff:"bool"`
 	Values        []string          `diff:"values"`
 	Map           map[string]string `diff:"map"`
+	Pointer       *string           `diff:"pointer"`
 	Ignored       bool              `diff:"-"`
 	Identifiables []tistruct        `diff:"identifiables"`
+}
+
+func sptr(s string) *string {
+	return &s
 }
 
 func TestDiff(t *testing.T) {
@@ -118,6 +123,20 @@ func TestDiff(t *testing.T) {
 			"struct-map-update", tstruct{Map: map[string]string{"test": "123"}}, tstruct{Map: map[string]string{"test": "456"}},
 			Changelog{
 				Change{Type: UPDATE, Path: []string{"map"}, From: map[string]string{"test": "123"}, To: map[string]string{"test": "456"}},
+			},
+			nil,
+		},
+		{
+			"struct-string-pointer-update", tstruct{Pointer: sptr("test")}, tstruct{Pointer: sptr("test2")},
+			Changelog{
+				Change{Type: UPDATE, Path: []string{"pointer"}, From: "test", To: "test2"},
+			},
+			nil,
+		},
+		{
+			"struct-nil-string-pointer-update", tstruct{Pointer: nil}, tstruct{Pointer: sptr("test")},
+			Changelog{
+				Change{Type: UPDATE, Path: []string{"pointer"}, From: nil, To: sptr("test")},
 			},
 			nil,
 		},

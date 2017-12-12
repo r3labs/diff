@@ -65,6 +65,8 @@ func (cl *Changelog) diff(path []string, a, b reflect.Value) error {
 		err = cl.diffInt(path, a, b)
 	case reflect.Map:
 		err = cl.diffMap(path, a, b)
+	case reflect.Ptr:
+		err = cl.diffPtr(path, a, b)
 	default:
 		err = errors.New("unsupported type: " + a.Kind().String())
 	}
