@@ -2,7 +2,7 @@
 
 A library for diffing golang structures and values. It supports basic diffing, returning true or false if a change is detected, or a full changelog of all items that have been modified.
 
-## Build status
+## Build status
 
 * Master [![CircleCI](https://circleci.com/gh/r3labs/diff/tree/master.svg?style=svg)](https://circleci.com/gh/r3labs/diff/tree/master)
 
