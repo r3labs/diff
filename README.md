@@ -1,6 +1,8 @@
 # diff
 
-A library for diffing golang structures and values. It supports basic diffing, returning true or false if a change is detected, or a full changelog of all items that have been modified.
+A library for diffing golang structures and values.
+
+Utilizing field tags and reflection, it is able to compare two structures of the same type and create a changelog of all modified values. The produced changelog can easily be serialized to json.
 
 ## Build status
 
@@ -11,6 +13,60 @@ A library for diffing golang structures and values. It supports basic diffing, r
 ```
 go get github.com/r3labs/diff
 ```
+
+## Changelog Format
+
+When diffing two structures using `Diff`, a changelog will be produced. Any detected changes will populate the changelog array with a Change type:
+
+```go
+type Change struct {
+	Type string      // The type of change detected; can be one of create, update or delete
+	Path []string    // The path of the detected change; will contain any field name or array index that was part of the traversal
+	From interface{} // The original value that was present in the "from" structure
+	To   interface{} // The new value that was detected as a change in the "to" structure
+}
+```
+
+Given the example below, we are diffing two slices where the third element has been removed:
+
+```go
+from := []int{1, 2, 3, 4}
+to := []int{1, 2, 4}
+
+changelog, _ := diff.Diff(from, to)
+```
+
+The resultant changelog should contain one change:
+
+```go
+Change{
+    Type: "delete",
+    Path: ["2"],
+    From: 3,
+    To:   nil,
+}
+```
+
+## Supported Types
+
+A diffable value can be/contain any of the following types:
+
+* struct
+* slice
+* string
+* int
+* bool
+* map
+* pointer
+
+### Tags
+
+In order for struct fields to be compared, they must be tagged with a given name. All tag values are prefixed with `diff`. i.e. `diff:"items"`.
+
+* `-` : In the event that you want to exclude a value from the diff, you can use the tag `diff:"-"` and the field will be ignored.
+
+* `identifier` : If you need to compare arrays by a matching identifier and not based on order, you can specify a the `identifier` tag. If an identifiable element is found in both the from and to structures, they will be directly compared. i.e. `diff:"name,identifier"`
+
 
 ## Usage
 
@@ -49,140 +105,12 @@ When marshalling the changelog to json, the output will look like:
 [
     {
         "type": "delete",
-        "path": [
-            "items", "2"
-        ],
+        "path": ["items", "2"],
         "from": 3,
         "to": null
     }
 ]
 ```
-
-A more complicated example might look like:
-
-```go
-import "github.com/r3labs/diff"
-
-
-type Tag struct {
-    Name  string `diff:"name,identifier"`
-    Value string `diff:"value"`
-}
-
-type Fruit struct {
-    ID        int      `diff:"id"`
-    Name      string   `diff:"name"`
-    Healthy   bool     `diff:"healthy"`
-    Nutrients []string `diff:"nutrients"`
-    Tags      []Tag    `diff:"tags"`
-}
-
-func main() {
-    a := Fruit{
-        ID:      1,
-        Name:    "Green Apple",
-        Healthy: true,
-        Nutrients: []string{
-            "vitamin c",
-            "vitamin d",
-        },
-        Tags: []Tag{
-            {
-                Name:  "kind",
-                Value: "fruit",
-            },
-        },
-    }
-
-    b := Fruit{
-        ID:      2,
-        Name:    "Red Apple",
-        Healthy: true,
-        Nutrients: []string{
-            "vitamin c",
-            "vitamin d",
-            "vitamin e",
-        },
-        Tags: []Tag{
-            {
-                Name:  "popularity",
-                Value: "high",
-            },
-            {
-                Name:  "kind",
-                Value: "fruit",
-            },
-        },
-    }
-
-    changelog, err := diff.Diff(a, b)
-    ...
-}
-```
-
-This yields a changelog of:
-
-```json
-[
-    {
-        "type": "update",
-        "path": [
-            "id"
-        ],
-        "from": 1,
-        "to": 2
-    },
-    {
-        "type": "update",
-        "path": [
-            "name"
-        ],
-        "from": "Green Apple",
-        "to": "Red Apple"
-    },
-    {
-        "type": "create",
-        "path": [
-            "nutrients",
-            "2"
-        ],
-        "from": null,
-        "to": "vitamin e"
-    },
-    {
-        "type": "create",
-        "path": [
-            "tags",
-            "popularity"
-        ],
-        "from": null,
-        "to": {
-            "Name": "popularity",
-            "Value": "high"
-        }
-    }
-]
-```
-
-### Tag Options
-
-The following tag options can be set:
-
-* `-` excludes the field from the diff
-* `identifier` indicates that this field is used as an identifier when the parent struct is a member of a slice. In a slice where there are identifiable items, ordering will be ignored and matched components will be diff'ed together.
-
-
-## Supported Types
-
-A diffable value can be/contain any of the following types:
-
-* struct
-* slice
-* string
-* int
-* bool
-* map
-* pointer
 
 
 ## Running Tests
