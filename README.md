@@ -65,7 +65,7 @@ In order for struct fields to be compared, they must be tagged with a given name
 
 * `-` : In the event that you want to exclude a value from the diff, you can use the tag `diff:"-"` and the field will be ignored.
 
-* `identifier` : If you need to compare arrays by a matching identifier and not based on order, you can specify a the `identifier` tag. If an identifiable element is found in both the from and to structures, they will be directly compared. i.e. `diff:"name,identifier"`
+* `identifier` : If you need to compare arrays by a matching identifier and not based on order, you can specify the `identifier` tag. If an identifiable element is found in both the from and to structures, they will be directly compared. i.e. `diff:"name,identifier"`
 
 
 ## Usage
