@@ -48,8 +48,9 @@ func (cl *Changelog) diffSliceComparative(path []string, a, b reflect.Value) err
 
 	for i := 0; i < a.Len(); i++ {
 		ae := a.Index(i)
+		ak := getFinalValue(ae)
 
-		id := identifier(ae)
+		id := identifier(ak)
 		if id != nil {
 			c.addA(id, &ae)
 		}
@@ -57,8 +58,9 @@ func (cl *Changelog) diffSliceComparative(path []string, a, b reflect.Value) err
 
 	for i := 0; i < b.Len(); i++ {
 		be := b.Index(i)
+		bk := getFinalValue(be)
 
-		id := identifier(be)
+		id := identifier(bk)
 		if id != nil {
 			c.addB(id, &be)
 		}
@@ -100,8 +102,10 @@ func sliceHas(s, v reflect.Value) bool {
 func comparative(a, b reflect.Value) bool {
 	if a.Len() > 0 {
 		ae := a.Index(0)
-		if ae.Kind() == reflect.Struct {
-			if identifier(ae) != nil {
+		ak := getFinalValue(ae)
+
+		if ak.Kind() == reflect.Struct {
+			if identifier(ak) != nil {
 				return true
 			}
 		}
@@ -109,12 +113,25 @@ func comparative(a, b reflect.Value) bool {
 
 	if b.Len() > 0 {
 		be := b.Index(0)
-		if be.Kind() == reflect.Struct {
-			if identifier(be) != nil {
+		bk := getFinalValue(be)
+
+		if bk.Kind() == reflect.Struct {
+			if identifier(bk) != nil {
 				return true
 			}
 		}
 	}
 
 	return false
+}
+
+func getFinalValue(t reflect.Value) reflect.Value {
+	switch t.Kind() {
+	case reflect.Interface:
+		return getFinalValue(t.Elem())
+	case reflect.Ptr:
+		return getFinalValue(reflect.Indirect(t))
+	default:
+		return t
+	}
 }
