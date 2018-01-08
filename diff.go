@@ -65,7 +65,7 @@ func (cl *Changelog) diff(path []string, a, b reflect.Value) error {
 		err = cl.diffString(path, a, b)
 	case reflect.Bool:
 		err = cl.diffBool(path, a, b)
-	case reflect.Int:
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		err = cl.diffInt(path, a, b)
 	case reflect.Map:
 		err = cl.diffMap(path, a, b)
@@ -107,7 +107,7 @@ func identifier(v reflect.Value) interface{} {
 		t := tag(v, i)
 
 		parts := strings.Split(t, ",")
-		if len(parts) < 1 {
+		if len(parts) < 2 {
 			continue
 		}
 
