@@ -49,6 +49,19 @@ func Diff(a, b interface{}) (Changelog, error) {
 	return cl, cl.diff([]string{}, reflect.ValueOf(a), reflect.ValueOf(b))
 }
 
+// Filter : filter changes based on path. Paths may contain valid regexp to match items
+func (cl *Changelog) Filter(path []string) Changelog {
+	var ncl Changelog
+
+	for _, c := range *cl {
+		if pathmatch(path, c.Path) {
+			ncl = append(ncl, c)
+		}
+	}
+
+	return ncl
+}
+
 func (cl *Changelog) diff(path []string, a, b reflect.Value) error {
 	var err error
 

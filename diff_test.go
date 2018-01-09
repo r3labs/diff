@@ -196,3 +196,29 @@ func TestDiff(t *testing.T) {
 	}
 
 }
+
+func TestFilter(t *testing.T) {
+	cases := []struct {
+		Name     string
+		Filter   []string
+		Expected [][]string
+	}{
+		{"simple", []string{"item-1", "subitem"}, [][]string{{"item-1", "subitem"}}},
+		{"regex", []string{"item-*"}, [][]string{{"item-1", "subitem"}, {"item-2", "subitem"}}},
+	}
+
+	cl := Changelog{
+		{Path: []string{"item-1", "subitem"}},
+		{Path: []string{"item-2", "subitem"}},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.Name, func(t *testing.T) {
+			ncl := cl.Filter(tc.Filter)
+			assert.Len(t, ncl, len(tc.Expected))
+			for i, e := range tc.Expected {
+				assert.Equal(t, e, ncl[i].Path)
+			}
+		})
+	}
+}
