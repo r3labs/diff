@@ -6,7 +6,6 @@ package diff
 
 import (
 	"reflect"
-	"strconv"
 )
 
 func (cl *Changelog) diffSlice(path []string, a, b reflect.Value) error {
@@ -22,25 +21,30 @@ func (cl *Changelog) diffSlice(path []string, a, b reflect.Value) error {
 }
 
 func (cl *Changelog) diffSliceGeneric(path []string, a, b reflect.Value) error {
+	missing := NewComparativeList()
+
 	for i := 0; i < a.Len(); i++ {
 		ae := a.Index(i)
-		fpath := append(path, strconv.Itoa(i))
 
 		if !sliceHas(b, ae) {
-			cl.add(DELETE, fpath, ae.Interface(), nil)
+			missing.addA(i, &ae)
 		}
 	}
 
 	for i := 0; i < b.Len(); i++ {
 		be := b.Index(i)
-		fpath := append(path, strconv.Itoa(i))
 
 		if !sliceHas(a, be) {
-			cl.add(CREATE, fpath, nil, be.Interface())
+			missing.addB(i, &be)
 		}
 	}
 
-	return nil
+	// fallback to comparing based on order in slice if item is missing
+	if len(*missing) == 0 {
+		return nil
+	}
+
+	return cl.diffComparative(path, missing)
 }
 
 func (cl *Changelog) diffSliceComparative(path []string, a, b reflect.Value) error {
@@ -66,26 +70,7 @@ func (cl *Changelog) diffSliceComparative(path []string, a, b reflect.Value) err
 		}
 	}
 
-	for k, v := range *c {
-		fpath := append(path, idstring(k))
-
-		if v.A != nil && v.B == nil {
-			cl.add(DELETE, fpath, v.A.Interface(), nil)
-		}
-
-		if v.A == nil && v.B != nil {
-			cl.add(CREATE, fpath, nil, v.B.Interface())
-		}
-
-		if v.A != nil && v.B != nil {
-			err := cl.diff(fpath, *v.A, *v.B)
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil
+	return cl.diffComparative(path, c)
 }
 
 func sliceHas(s, v reflect.Value) bool {
@@ -93,32 +78,6 @@ func sliceHas(s, v reflect.Value) bool {
 		x := s.Index(i)
 		if reflect.DeepEqual(x.Interface(), v.Interface()) {
 			return true
-		}
-	}
-
-	return false
-}
-
-func comparative(a, b reflect.Value) bool {
-	if a.Len() > 0 {
-		ae := a.Index(0)
-		ak := getFinalValue(ae)
-
-		if ak.Kind() == reflect.Struct {
-			if identifier(ak) != nil {
-				return true
-			}
-		}
-	}
-
-	if b.Len() > 0 {
-		be := b.Index(0)
-		bk := getFinalValue(be)
-
-		if bk.Kind() == reflect.Struct {
-			if identifier(bk) != nil {
-				return true
-			}
 		}
 	}
 

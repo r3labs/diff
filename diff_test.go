@@ -103,6 +103,76 @@ func TestDiff(t *testing.T) {
 			nil,
 		},
 		{
+			"map-slice-insert", []map[string]string{{"test": "123"}}, []map[string]string{{"test": "123", "tset": "456"}},
+			Changelog{
+				Change{Type: CREATE, Path: []string{"0", "tset"}, To: "456"},
+			},
+			nil,
+		},
+		{
+			"map-slice-update", []map[string]string{{"test": "123"}}, []map[string]string{{"test": "456"}},
+			Changelog{
+				Change{Type: UPDATE, Path: []string{"0", "test"}, From: "123", To: "456"},
+			},
+			nil,
+		},
+		{
+			"map-slice-delete", []map[string]string{{"test": "123", "tset": "456"}}, []map[string]string{{"test": "123"}},
+			Changelog{
+				Change{Type: DELETE, Path: []string{"0", "tset"}, From: "456"},
+			},
+			nil,
+		},
+		{
+			"nested-map-insert", map[string]map[string]string{"a": {"test": "123"}}, map[string]map[string]string{"a": {"test": "123", "tset": "456"}},
+			Changelog{
+				Change{Type: CREATE, Path: []string{"a", "tset"}, To: "456"},
+			},
+			nil,
+		},
+		{
+			"nested-map-update", map[string]map[string]string{"a": {"test": "123"}}, map[string]map[string]string{"a": {"test": "456"}},
+			Changelog{
+				Change{Type: UPDATE, Path: []string{"a", "test"}, From: "123", To: "456"},
+			},
+			nil,
+		},
+		{
+			"nested-map-delete", map[string]map[string]string{"a": {"test": "123"}}, map[string]map[string]string{"a": {}},
+			Changelog{
+				Change{Type: DELETE, Path: []string{"a", "test"}, From: "123", To: nil},
+			},
+			nil,
+		},
+		{
+			"nested-slice-insert", map[string][]int{"a": []int{1, 2, 3}}, map[string][]int{"a": []int{1, 2, 3, 4}},
+			Changelog{
+				Change{Type: CREATE, Path: []string{"a", "3"}, To: 4},
+			},
+			nil,
+		},
+		{
+			"nested-slice-update", map[string][]int{"a": []int{1, 2, 3}}, map[string][]int{"a": []int{1, 4, 3}},
+			Changelog{
+				Change{Type: UPDATE, Path: []string{"a", "1"}, From: 2, To: 4},
+			},
+			nil,
+		},
+		{
+			"nested-slice-delete", map[string][]int{"a": []int{1, 2, 3}}, map[string][]int{"a": []int{1, 3}},
+			Changelog{
+				Change{Type: DELETE, Path: []string{"a", "1"}, From: 2, To: nil},
+			},
+			nil,
+		},
+		{
+			"map-interface-slice-update", []map[string]interface{}{{"test": nil}}, []map[string]interface{}{{"test": "456"}},
+			Changelog{
+				Change{Type: UPDATE, Path: []string{"0", "test"}, From: nil, To: "456"},
+			},
+			nil,
+		},
+		{
 			"struct-string-update", tstruct{Name: "one"}, tstruct{Name: "two"},
 			Changelog{
 				Change{Type: UPDATE, Path: []string{"name"}, From: "one", To: "two"},
@@ -126,7 +196,7 @@ func TestDiff(t *testing.T) {
 		{
 			"struct-map-update", tstruct{Map: map[string]string{"test": "123"}}, tstruct{Map: map[string]string{"test": "456"}},
 			Changelog{
-				Change{Type: UPDATE, Path: []string{"map"}, From: map[string]string{"test": "123"}, To: map[string]string{"test": "456"}},
+				Change{Type: UPDATE, Path: []string{"map", "test"}, From: "123", To: "456"},
 			},
 			nil,
 		},
