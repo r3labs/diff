@@ -6,6 +6,7 @@ package diff
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
@@ -57,13 +58,22 @@ func Diff(a, b interface{}) (Changelog, error) {
 func StructValues(t string, s interface{}) (Changelog, error) {
 	var cl Changelog
 
+	fmt.Println(t)
+	fmt.Printf("%t\n", s)
+
 	if t != CREATE && t != DELETE {
 		return cl, ErrInvalidChangeType
 	}
 
 	a := reflect.ValueOf(s)
 
+	if a.Kind() == reflect.Ptr {
+		a = reflect.Indirect(a)
+	}
+
 	if a.Kind() != reflect.Struct {
+		fmt.Println(a.Kind())
+		fmt.Println(a.Type())
 		return cl, ErrTypeMismatch
 	}
 
