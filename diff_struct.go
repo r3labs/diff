@@ -12,15 +12,15 @@ func (cl *Changelog) diffStruct(path []string, a, b reflect.Value) error {
 	}
 
 	for i := 0; i < a.NumField(); i++ {
-		name := a.Type().Field(i).Name
-		tname := tagName(a, i)
+		field := a.Type().Field(i)
+		tname := tagName(field)
 
-		if tname == "-" {
+		if tname == "-" || hasTagOption(field, "immutable") {
 			continue
 		}
 
 		af := a.Field(i)
-		bf := b.FieldByName(name)
+		bf := b.FieldByName(field.Name)
 
 		fpath := append(path, tname)
 

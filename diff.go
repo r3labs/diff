@@ -14,6 +14,8 @@ import (
 var (
 	// ErrTypeMismatch : Compared types do not match
 	ErrTypeMismatch = errors.New("types do not match")
+	// ErrInvalidChangeType : The specified change values are not unsupported
+	ErrInvalidChangeType = errors.New("change type must be one of 'create' or 'delete'")
 )
 
 const (
@@ -47,6 +49,48 @@ func Diff(a, b interface{}) (Changelog, error) {
 	var cl Changelog
 
 	return cl, cl.diff([]string{}, reflect.ValueOf(a), reflect.ValueOf(b))
+}
+
+// StructValues : gets all values from a struct
+// values are stored as "created" or "deleted" entries in the changelog,
+// depending on the change type specified
+func StructValues(t string, s interface{}) (Changelog, error) {
+	var cl Changelog
+
+	if t != CREATE && t != DELETE {
+		return cl, ErrInvalidChangeType
+	}
+
+	a := reflect.ValueOf(s)
+
+	if a.Kind() != reflect.Struct {
+		return cl, ErrTypeMismatch
+	}
+
+	x := reflect.New(a.Type()).Elem()
+
+	for i := 0; i < a.NumField(); i++ {
+		field := a.Type().Field(i)
+		tname := tagName(field)
+
+		if tname == "-" {
+			continue
+		}
+
+		af := a.Field(i)
+		xf := x.FieldByName(field.Name)
+
+		err := cl.diff([]string{tname}, xf, af)
+		if err != nil {
+			return cl, err
+		}
+	}
+
+	for i := 0; i < len(cl); i++ {
+		cl[i] = swapChange(t, cl[i])
+	}
+
+	return cl, nil
 }
 
 // Filter : filter changes based on path. Paths may contain valid regexp to match items
@@ -106,12 +150,12 @@ func tag(v reflect.Value, i int) string {
 	return v.Type().Field(i).Tag.Get("diff")
 }
 
-func tagName(v reflect.Value, i int) string {
-	t := tag(v, i)
+func tagName(f reflect.StructField) string {
+	t := f.Tag.Get("diff")
 
 	parts := strings.Split(t, ",")
 	if len(parts) < 1 {
-		return ""
+		return "-"
 	}
 
 	return parts[0]
@@ -119,19 +163,43 @@ func tagName(v reflect.Value, i int) string {
 
 func identifier(v reflect.Value) interface{} {
 	for i := 0; i < v.NumField(); i++ {
-		t := tag(v, i)
-
-		parts := strings.Split(t, ",")
-		if len(parts) < 2 {
-			continue
-		}
-
-		if parts[1] == "identifier" {
+		if hasTagOption(v.Type().Field(i), "identifier") {
 			return v.Field(i).Interface()
 		}
 	}
 
 	return nil
+}
+
+func hasTagOption(f reflect.StructField, opt string) bool {
+	parts := strings.Split(f.Tag.Get("diff"), ",")
+	if len(parts) < 2 {
+		return false
+	}
+
+	for _, option := range parts[1:] {
+		if option == opt {
+			return true
+		}
+	}
+
+	return false
+}
+
+func swapChange(t string, c Change) Change {
+	nc := Change{
+		Type: t,
+		Path: c.Path,
+	}
+
+	switch t {
+	case CREATE:
+		nc.To = c.To
+	case DELETE:
+		nc.From = c.To
+	}
+
+	return nc
 }
 
 func idstring(v interface{}) string {

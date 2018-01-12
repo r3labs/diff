@@ -16,6 +16,7 @@ type tistruct struct {
 }
 
 type tstruct struct {
+	ID            string            `diff:"id,immutable"`
 	Name          string            `diff:"name"`
 	Value         int               `diff:"value"`
 	Bool          bool              `diff:"bool"`
@@ -243,6 +244,16 @@ func TestDiff(t *testing.T) {
 			nil,
 		},
 		{
+			"mismatched-values-struct-nil", nil, &tstruct{Identifiables: []tistruct{{"one", 1}}},
+			Changelog{},
+			ErrTypeMismatch,
+		},
+		{
+			"mismatched-values-nil-struct", &tstruct{Identifiables: []tistruct{{"one", 1}}}, nil,
+			Changelog{},
+			ErrTypeMismatch,
+		},
+		{
 			"omittable", tstruct{Ignored: false}, tstruct{Ignored: true},
 			Changelog{},
 			nil,
@@ -264,7 +275,6 @@ func TestDiff(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func TestFilter(t *testing.T) {
@@ -288,6 +298,57 @@ func TestFilter(t *testing.T) {
 			assert.Len(t, ncl, len(tc.Expected))
 			for i, e := range tc.Expected {
 				assert.Equal(t, e, ncl[i].Path)
+			}
+		})
+	}
+}
+
+func TestStructValues(t *testing.T) {
+	cases := []struct {
+		Name       string
+		ChangeType string
+		X          interface{}
+		Changelog  Changelog
+		Error      error
+	}{
+		{
+			"struct-create", CREATE, tstruct{ID: "xxxxx", Name: "something", Value: 1, Values: []string{"one", "two", "three"}},
+			Changelog{
+				Change{Type: CREATE, Path: []string{"id"}, From: nil, To: "xxxxx"},
+				Change{Type: CREATE, Path: []string{"name"}, From: nil, To: "something"},
+				Change{Type: CREATE, Path: []string{"value"}, From: nil, To: 1},
+				Change{Type: CREATE, Path: []string{"values", "0"}, From: nil, To: "one"},
+				Change{Type: CREATE, Path: []string{"values", "1"}, From: nil, To: "two"},
+				Change{Type: CREATE, Path: []string{"values", "2"}, From: nil, To: "three"},
+			},
+			nil,
+		},
+		{
+			"struct-delete", DELETE, tstruct{ID: "xxxxx", Name: "something", Value: 1, Values: []string{"one", "two", "three"}},
+			Changelog{
+				Change{Type: DELETE, Path: []string{"id"}, From: "xxxxx", To: nil},
+				Change{Type: DELETE, Path: []string{"name"}, From: "something", To: nil},
+				Change{Type: DELETE, Path: []string{"value"}, From: 1, To: nil},
+				Change{Type: DELETE, Path: []string{"values", "0"}, From: "one", To: nil},
+				Change{Type: DELETE, Path: []string{"values", "1"}, From: "two", To: nil},
+				Change{Type: DELETE, Path: []string{"values", "2"}, From: "three", To: nil},
+			},
+			nil,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.Name, func(t *testing.T) {
+			cl, err := StructValues(tc.ChangeType, tc.X)
+
+			assert.Equal(t, tc.Error, err)
+			assert.Equal(t, len(tc.Changelog), len(cl))
+
+			for i, c := range cl {
+				assert.Equal(t, tc.Changelog[i].Type, c.Type)
+				assert.Equal(t, tc.Changelog[i].Path, c.Path)
+				assert.Equal(t, tc.Changelog[i].From, c.From)
+				assert.Equal(t, tc.Changelog[i].To, c.To)
 			}
 		})
 	}
