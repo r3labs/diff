@@ -40,7 +40,7 @@ func (cl *Changelog) diffSliceGeneric(path []string, a, b reflect.Value) error {
 	}
 
 	// fallback to comparing based on order in slice if item is missing
-	if len(*missing) == 0 {
+	if len(missing.keys) == 0 {
 		return nil
 	}
 

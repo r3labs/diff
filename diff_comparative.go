@@ -9,19 +9,19 @@ import (
 )
 
 func (cl *Changelog) diffComparative(path []string, c *ComparativeList) error {
-	for k, v := range *c {
+	for _, k := range c.keys {
 		fpath := append(path, idstring(k))
 
-		if v.A != nil && v.B == nil {
-			cl.add(DELETE, fpath, v.A.Interface(), nil)
+		if c.m[k].A != nil && c.m[k].B == nil {
+			cl.add(DELETE, fpath, c.m[k].A.Interface(), nil)
 		}
 
-		if v.A == nil && v.B != nil {
-			cl.add(CREATE, fpath, nil, v.B.Interface())
+		if c.m[k].A == nil && c.m[k].B != nil {
+			cl.add(CREATE, fpath, nil, c.m[k].B.Interface())
 		}
 
-		if v.A != nil && v.B != nil {
-			err := cl.diff(fpath, *v.A, *v.B)
+		if c.m[k].A != nil && c.m[k].B != nil {
+			err := cl.diff(fpath, *c.m[k].A, *c.m[k].B)
 			if err != nil {
 				return err
 			}

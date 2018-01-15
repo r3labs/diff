@@ -12,24 +12,31 @@ type Comparative struct {
 }
 
 // ComparativeList : stores indexed comparative
-type ComparativeList map[interface{}]*Comparative
+type ComparativeList struct {
+	m    map[interface{}]*Comparative
+	keys []interface{}
+}
 
 // NewComparativeList : returns a new comparative list
 func NewComparativeList() *ComparativeList {
-	cl := make(ComparativeList)
-	return &cl
+	return &ComparativeList{
+		m:    make(map[interface{}]*Comparative),
+		keys: make([]interface{}, 0),
+	}
 }
 
 func (cl *ComparativeList) addA(k interface{}, v *reflect.Value) {
-	if (*cl)[k] == nil {
-		(*cl)[k] = &Comparative{}
+	if (*cl).m[k] == nil {
+		(*cl).m[k] = &Comparative{}
+		(*cl).keys = append((*cl).keys, k)
 	}
-	(*cl)[k].A = v
+	(*cl).m[k].A = v
 }
 
 func (cl *ComparativeList) addB(k interface{}, v *reflect.Value) {
-	if (*cl)[k] == nil {
-		(*cl)[k] = &Comparative{}
+	if (*cl).m[k] == nil {
+		(*cl).m[k] = &Comparative{}
+		(*cl).keys = append((*cl).keys, k)
 	}
-	(*cl)[k].B = v
+	(*cl).m[k].B = v
 }

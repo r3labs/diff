@@ -6,7 +6,6 @@ package diff
 
 import (
 	"errors"
-	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
@@ -58,9 +57,6 @@ func Diff(a, b interface{}) (Changelog, error) {
 func StructValues(t string, s interface{}) (Changelog, error) {
 	var cl Changelog
 
-	fmt.Println(t)
-	fmt.Printf("%t\n", s)
-
 	if t != CREATE && t != DELETE {
 		return cl, ErrInvalidChangeType
 	}
@@ -72,8 +68,6 @@ func StructValues(t string, s interface{}) (Changelog, error) {
 	}
 
 	if a.Kind() != reflect.Struct {
-		fmt.Println(a.Kind())
-		fmt.Println(a.Type())
 		return cl, ErrTypeMismatch
 	}
 
@@ -154,10 +148,6 @@ func (cl *Changelog) add(t string, path []string, from, to interface{}) {
 		From: from,
 		To:   to,
 	})
-}
-
-func tag(v reflect.Value, i int) string {
-	return v.Type().Field(i).Tag.Get("diff")
 }
 
 func tagName(f reflect.StructField) string {
