@@ -67,6 +67,7 @@ In order for struct fields to be compared, they must be tagged with a given name
 
 * `identifier` : If you need to compare arrays by a matching identifier and not based on order, you can specify the `identifier` tag. If an identifiable element is found in both the from and to structures, they will be directly compared. i.e. `diff:"name,identifier"`
 
+* `immutable` : Will omit this struct field from diffing. When using `diff.StructValues()` these values will be added to the returned changelog. It's usecase is for when we have nothing to compare a struct to and want to show all of its relevant values.
 
 ## Usage
 

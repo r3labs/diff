@@ -12,19 +12,19 @@ func (cl *Changelog) diffComparative(path []string, c *ComparativeList) error {
 	for _, k := range c.keys {
 		fpath := append(path, idstring(k))
 
-		if c.m[k].A != nil && c.m[k].B == nil {
-			cl.add(DELETE, fpath, c.m[k].A.Interface(), nil)
+		nv := reflect.ValueOf(nil)
+
+		if c.m[k].A == nil {
+			c.m[k].A = &nv
 		}
 
-		if c.m[k].A == nil && c.m[k].B != nil {
-			cl.add(CREATE, fpath, nil, c.m[k].B.Interface())
+		if c.m[k].B == nil {
+			c.m[k].B = &nv
 		}
 
-		if c.m[k].A != nil && c.m[k].B != nil {
-			err := cl.diff(fpath, *c.m[k].A, *c.m[k].B)
-			if err != nil {
-				return err
-			}
+		err := cl.diff(fpath, *c.m[k].A, *c.m[k].B)
+		if err != nil {
+			return err
 		}
 	}
 

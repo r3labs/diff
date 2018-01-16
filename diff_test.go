@@ -5,6 +5,8 @@
 package diff
 
 import (
+	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -85,14 +87,16 @@ func TestDiff(t *testing.T) {
 		{
 			"comparable-slice-insert", []tistruct{{"one", 1}}, []tistruct{{"one", 1}, {"two", 2}},
 			Changelog{
-				Change{Type: CREATE, Path: []string{"two"}, To: tistruct{"two", 2}},
+				Change{Type: CREATE, Path: []string{"two", "name"}, To: "two"},
+				Change{Type: CREATE, Path: []string{"two", "value"}, To: 2},
 			},
 			nil,
 		},
 		{
 			"comparable-slice-delete", []tistruct{{"one", 1}, {"two", 2}}, []tistruct{{"one", 1}},
 			Changelog{
-				Change{Type: DELETE, Path: []string{"two"}, From: tistruct{"two", 2}},
+				Change{Type: DELETE, Path: []string{"two", "name"}, From: "two"},
+				Change{Type: DELETE, Path: []string{"two", "value"}, From: 2},
 			},
 			nil,
 		},
@@ -121,6 +125,27 @@ func TestDiff(t *testing.T) {
 			"map-slice-delete", []map[string]string{{"test": "123", "tset": "456"}}, []map[string]string{{"test": "123"}},
 			Changelog{
 				Change{Type: DELETE, Path: []string{"0", "tset"}, From: "456"},
+			},
+			nil,
+		},
+		{
+			"map-interface-slice-update", []map[string]interface{}{{"test": nil}}, []map[string]interface{}{{"test": "456"}},
+			Changelog{
+				Change{Type: UPDATE, Path: []string{"0", "test"}, From: nil, To: "456"},
+			},
+			nil,
+		},
+		{
+			"map-nil", map[string]string{"one": "test"}, nil,
+			Changelog{
+				Change{Type: DELETE, Path: []string{"one"}, From: "test", To: nil},
+			},
+			nil,
+		},
+		{
+			"nil-map", nil, map[string]string{"one": "test"},
+			Changelog{
+				Change{Type: CREATE, Path: []string{"one"}, From: nil, To: "test"},
 			},
 			nil,
 		},
@@ -163,13 +188,6 @@ func TestDiff(t *testing.T) {
 			"nested-slice-delete", map[string][]int{"a": []int{1, 2, 3}}, map[string][]int{"a": []int{1, 3}},
 			Changelog{
 				Change{Type: DELETE, Path: []string{"a", "1"}, From: 2, To: nil},
-			},
-			nil,
-		},
-		{
-			"map-interface-slice-update", []map[string]interface{}{{"test": nil}}, []map[string]interface{}{{"test": "456"}},
-			Changelog{
-				Change{Type: UPDATE, Path: []string{"0", "test"}, From: nil, To: "456"},
 			},
 			nil,
 		},
@@ -225,7 +243,8 @@ func TestDiff(t *testing.T) {
 		{
 			"struct-identifiable-slice-insert", tstruct{Identifiables: []tistruct{{"one", 1}}}, tstruct{Identifiables: []tistruct{{"one", 1}, {"two", 2}}},
 			Changelog{
-				Change{Type: CREATE, Path: []string{"identifiables", "two"}, From: nil, To: tistruct{"two", 2}},
+				Change{Type: CREATE, Path: []string{"identifiables", "two", "name"}, From: nil, To: "two"},
+				Change{Type: CREATE, Path: []string{"identifiables", "two", "value"}, From: nil, To: 2},
 			},
 			nil,
 		},
@@ -239,7 +258,8 @@ func TestDiff(t *testing.T) {
 		{
 			"struct-identifiable-slice-delete", tstruct{Identifiables: []tistruct{{"one", 1}, {"two", 2}}}, tstruct{Identifiables: []tistruct{{"one", 1}}},
 			Changelog{
-				Change{Type: DELETE, Path: []string{"identifiables", "two"}, From: tistruct{"two", 2}, To: nil},
+				Change{Type: DELETE, Path: []string{"identifiables", "two", "name"}, From: "two", To: nil},
+				Change{Type: DELETE, Path: []string{"identifiables", "two", "value"}, From: 2, To: nil},
 			},
 			nil,
 		},
@@ -266,6 +286,11 @@ func TestDiff(t *testing.T) {
 
 			assert.Equal(t, tc.Error, err)
 			assert.Equal(t, len(tc.Changelog), len(cl))
+
+			if len(cl) != len(tc.Changelog) {
+				data, _ := json.Marshal(cl)
+				fmt.Println(string(data))
+			}
 
 			for i, c := range cl {
 				assert.Equal(t, tc.Changelog[i].Type, c.Type)
@@ -339,7 +364,7 @@ func TestStructValues(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
-			cl, err := StructValues(tc.ChangeType, tc.X)
+			cl, err := StructValues(tc.ChangeType, []string{}, tc.X)
 
 			assert.Equal(t, tc.Error, err)
 			assert.Equal(t, len(tc.Changelog), len(cl))

@@ -54,47 +54,12 @@ func Diff(a, b interface{}) (Changelog, error) {
 // StructValues : gets all values from a struct
 // values are stored as "created" or "deleted" entries in the changelog,
 // depending on the change type specified
-func StructValues(t string, s interface{}) (Changelog, error) {
+func StructValues(t string, path []string, s interface{}) (Changelog, error) {
 	var cl Changelog
 
-	if t != CREATE && t != DELETE {
-		return cl, ErrInvalidChangeType
-	}
+	v := reflect.ValueOf(s)
 
-	a := reflect.ValueOf(s)
-
-	if a.Kind() == reflect.Ptr {
-		a = reflect.Indirect(a)
-	}
-
-	if a.Kind() != reflect.Struct {
-		return cl, ErrTypeMismatch
-	}
-
-	x := reflect.New(a.Type()).Elem()
-
-	for i := 0; i < a.NumField(); i++ {
-		field := a.Type().Field(i)
-		tname := tagName(field)
-
-		if tname == "-" {
-			continue
-		}
-
-		af := a.Field(i)
-		xf := x.FieldByName(field.Name)
-
-		err := cl.diff([]string{tname}, xf, af)
-		if err != nil {
-			return cl, err
-		}
-	}
-
-	for i := 0; i < len(cl); i++ {
-		cl[i] = swapChange(t, cl[i])
-	}
-
-	return cl, nil
+	return cl, cl.structValues(t, path, v)
 }
 
 // Filter : filter changes based on path. Paths may contain valid regexp to match items
@@ -111,34 +76,31 @@ func (cl *Changelog) Filter(path []string) Changelog {
 }
 
 func (cl *Changelog) diff(path []string, a, b reflect.Value) error {
-	var err error
-
-	if a.Kind() != b.Kind() {
-		return errors.New("types do not match")
+	// check if types match or are
+	if invalid(a, b) {
+		return ErrTypeMismatch
 	}
 
-	switch a.Kind() {
-	case reflect.Struct:
-		err = cl.diffStruct(path, a, b)
-	case reflect.Slice:
-		err = cl.diffSlice(path, a, b)
-	case reflect.String:
-		err = cl.diffString(path, a, b)
-	case reflect.Bool:
-		err = cl.diffBool(path, a, b)
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		err = cl.diffInt(path, a, b)
-	case reflect.Map:
-		err = cl.diffMap(path, a, b)
-	case reflect.Ptr:
-		err = cl.diffPtr(path, a, b)
-	case reflect.Interface:
-		err = cl.diffInterface(path, a, b)
+	switch {
+	case are(a, b, reflect.Struct, reflect.Invalid):
+		return cl.diffStruct(path, a, b)
+	case are(a, b, reflect.Slice, reflect.Invalid):
+		return cl.diffSlice(path, a, b)
+	case are(a, b, reflect.String, reflect.Invalid):
+		return cl.diffString(path, a, b)
+	case are(a, b, reflect.Bool, reflect.Invalid):
+		return cl.diffBool(path, a, b)
+	case are(a, b, reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Invalid):
+		return cl.diffInt(path, a, b)
+	case are(a, b, reflect.Map, reflect.Invalid):
+		return cl.diffMap(path, a, b)
+	case are(a, b, reflect.Ptr, reflect.Invalid):
+		return cl.diffPtr(path, a, b)
+	case are(a, b, reflect.Interface, reflect.Invalid):
+		return cl.diffInterface(path, a, b)
 	default:
-		err = errors.New("unsupported type: " + a.Kind().String())
+		return errors.New("unsupported type: " + a.Kind().String())
 	}
-
-	return err
 }
 
 func (cl *Changelog) add(t string, path []string, from, to interface{}) {
@@ -211,4 +173,34 @@ func idstring(v interface{}) string {
 	default:
 		return ""
 	}
+}
+
+func invalid(a, b reflect.Value) bool {
+	if a.Kind() == b.Kind() {
+		return false
+	}
+
+	if a.Kind() == reflect.Invalid {
+		return false
+	}
+	if b.Kind() == reflect.Invalid {
+		return false
+	}
+
+	return true
+}
+
+func are(a, b reflect.Value, kinds ...reflect.Kind) bool {
+	var amatch, bmatch bool
+
+	for _, k := range kinds {
+		if a.Kind() == k {
+			amatch = true
+		}
+		if b.Kind() == k {
+			bmatch = true
+		}
+	}
+
+	return amatch && bmatch
 }
