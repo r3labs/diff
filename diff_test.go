@@ -5,8 +5,6 @@
 package diff
 
 import (
-	"encoding/json"
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -17,16 +15,21 @@ type tistruct struct {
 	Value int    `diff:"value"`
 }
 
+type tuistruct struct {
+	Value int `diff:"value"`
+}
+
 type tstruct struct {
-	ID            string            `diff:"id,immutable"`
-	Name          string            `diff:"name"`
-	Value         int               `diff:"value"`
-	Bool          bool              `diff:"bool"`
-	Values        []string          `diff:"values"`
-	Map           map[string]string `diff:"map"`
-	Pointer       *string           `diff:"pointer"`
-	Ignored       bool              `diff:"-"`
-	Identifiables []tistruct        `diff:"identifiables"`
+	ID              string            `diff:"id,immutable"`
+	Name            string            `diff:"name"`
+	Value           int               `diff:"value"`
+	Bool            bool              `diff:"bool"`
+	Values          []string          `diff:"values"`
+	Map             map[string]string `diff:"map"`
+	Pointer         *string           `diff:"pointer"`
+	Ignored         bool              `diff:"-"`
+	Identifiables   []tistruct        `diff:"identifiables"`
+	Unidentifiables []tuistruct       `diff:"unidentifiables"`
 }
 
 func sptr(s string) *string {
@@ -264,6 +267,14 @@ func TestDiff(t *testing.T) {
 			nil,
 		},
 		{
+			"struct-unidentifiable-slice-insert-delete", tstruct{Unidentifiables: []tuistruct{{1}, {2}, {3}}}, tstruct{Unidentifiables: []tuistruct{{5}, {2}, {3}, {4}}},
+			Changelog{
+				Change{Type: UPDATE, Path: []string{"unidentifiables", "0", "value"}, From: 1, To: 5},
+				Change{Type: CREATE, Path: []string{"unidentifiables", "3", "value"}, From: nil, To: 4},
+			},
+			nil,
+		},
+		{
 			"mismatched-values-struct-nil", nil, &tstruct{Identifiables: []tistruct{{"one", 1}}},
 			Changelog{},
 			ErrTypeMismatch,
@@ -286,11 +297,6 @@ func TestDiff(t *testing.T) {
 
 			assert.Equal(t, tc.Error, err)
 			assert.Equal(t, len(tc.Changelog), len(cl))
-
-			if len(cl) != len(tc.Changelog) {
-				data, _ := json.Marshal(cl)
-				fmt.Println(string(data))
-			}
 
 			for i, c := range cl {
 				assert.Equal(t, tc.Changelog[i].Type, c.Type)

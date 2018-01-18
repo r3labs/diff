@@ -4,7 +4,9 @@
 
 package diff
 
-import "reflect"
+import (
+	"reflect"
+)
 
 func (cl *Changelog) diffStruct(path []string, a, b reflect.Value) error {
 	if a.Kind() == reflect.Invalid {
@@ -38,6 +40,8 @@ func (cl *Changelog) diffStruct(path []string, a, b reflect.Value) error {
 }
 
 func (cl *Changelog) structValues(t string, path []string, a reflect.Value) error {
+	var ncl Changelog
+
 	if t != CREATE && t != DELETE {
 		return ErrInvalidChangeType
 	}
@@ -66,14 +70,14 @@ func (cl *Changelog) structValues(t string, path []string, a reflect.Value) erro
 
 		fpath := append(path, tname)
 
-		err := cl.diff(fpath, xf, af)
+		err := ncl.diff(fpath, xf, af)
 		if err != nil {
 			return err
 		}
 	}
 
-	for i := 0; i < len(*cl); i++ {
-		(*cl)[i] = swapChange(t, (*cl)[i])
+	for i := 0; i < len(ncl); i++ {
+		(*cl) = append((*cl), swapChange(t, ncl[i]))
 	}
 
 	return nil
