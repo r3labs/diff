@@ -92,6 +92,8 @@ func (cl *Changelog) diff(path []string, a, b reflect.Value) error {
 		return cl.diffBool(path, a, b)
 	case are(a, b, reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Invalid):
 		return cl.diffInt(path, a, b)
+	case are(a, b, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Invalid):
+		return cl.diffUint(path, a, b)
 	case are(a, b, reflect.Map, reflect.Invalid):
 		return cl.diffMap(path, a, b)
 	case are(a, b, reflect.Ptr, reflect.Invalid):
