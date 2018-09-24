@@ -275,6 +275,11 @@ func TestDiff(t *testing.T) {
 			nil,
 		},
 		{
+			"mismatched-values-struct-map", map[string]string{"test": "one"}, &tstruct{Identifiables: []tistruct{{"one", 1}}},
+			Changelog{},
+			ErrTypeMismatch,
+		},
+		{
 			"mismatched-values-struct-nil", nil, &tstruct{Identifiables: []tistruct{{"one", 1}}},
 			Changelog{},
 			ErrTypeMismatch,
