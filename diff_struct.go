@@ -28,7 +28,7 @@ func (cl *Changelog) diffStruct(path []string, a, b reflect.Value) error {
 		af := a.Field(i)
 		bf := b.FieldByName(field.Name)
 
-		fpath := append(path, tname)
+		fpath := copyAppend(path, tname)
 
 		err := cl.diff(fpath, af, bf)
 		if err != nil {
@@ -68,7 +68,7 @@ func (cl *Changelog) structValues(t string, path []string, a reflect.Value) erro
 		af := a.Field(i)
 		xf := x.FieldByName(field.Name)
 
-		fpath := append(path, tname)
+		fpath := copyAppend(path, tname)
 
 		err := ncl.diff(fpath, xf, af)
 		if err != nil {

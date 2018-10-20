@@ -208,3 +208,12 @@ func are(a, b reflect.Value, kinds ...reflect.Kind) bool {
 
 	return amatch && bmatch
 }
+
+func copyAppend(src []string, elems ...string) []string {
+	dst := make([]string, len(src)+len(elems))
+	copy(dst, src)
+	for i := len(src); i < len(src)+len(elems); i++ {
+		dst[i] = elems[i-len(src)]
+	}
+	return dst
+}
