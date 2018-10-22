@@ -19,6 +19,15 @@ type tuistruct struct {
 	Value int `diff:"value"`
 }
 
+type tnstruct struct {
+	Slice []tmstruct `diff:"slice"`
+}
+
+type tmstruct struct {
+	Foo string `diff:"foo"`
+	Bar int    `diff:"bar"`
+}
+
 type tstruct struct {
 	ID              string            `diff:"id,immutable"`
 	Name            string            `diff:"name"`
@@ -30,6 +39,7 @@ type tstruct struct {
 	Ignored         bool              `diff:"-"`
 	Identifiables   []tistruct        `diff:"identifiables"`
 	Unidentifiables []tuistruct       `diff:"unidentifiables"`
+	Nested          tnstruct          `diff:"nested"`
 }
 
 func sptr(s string) *string {
@@ -292,6 +302,16 @@ func TestDiff(t *testing.T) {
 		{
 			"omittable", tstruct{Ignored: false}, tstruct{Ignored: true},
 			Changelog{},
+			nil,
+		},
+		{
+			"slice", &tstruct{}, &tstruct{Nested: tnstruct{Slice: []tmstruct{{"one", 1}, {"two", 2}}}},
+			Changelog{
+				Change{Type: CREATE, Path: []string{"nested", "slice", "0", "foo"}, From: nil, To: "one"},
+				Change{Type: CREATE, Path: []string{"nested", "slice", "0", "bar"}, From: nil, To: 1},
+				Change{Type: CREATE, Path: []string{"nested", "slice", "1", "foo"}, From: nil, To: "two"},
+				Change{Type: CREATE, Path: []string{"nested", "slice", "1", "bar"}, From: nil, To: 2},
+			},
 			nil,
 		},
 	}

@@ -10,7 +10,7 @@ import (
 
 func (cl *Changelog) diffComparative(path []string, c *ComparativeList) error {
 	for _, k := range c.keys {
-		fpath := append(path, idstring(k))
+		fpath := copyAppend(path, idstring(k))
 
 		nv := reflect.ValueOf(nil)
 
