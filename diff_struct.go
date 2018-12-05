@@ -25,6 +25,10 @@ func (cl *Changelog) diffStruct(path []string, a, b reflect.Value) error {
 			continue
 		}
 
+		if tname == "" {
+			tname = field.Name
+		}
+
 		af := a.Field(i)
 		bf := b.FieldByName(field.Name)
 
@@ -63,6 +67,10 @@ func (cl *Changelog) structValues(t string, path []string, a reflect.Value) erro
 
 		if tname == "-" {
 			continue
+		}
+
+		if tname == "" {
+			tname = field.Name
 		}
 
 		af := a.Field(i)
