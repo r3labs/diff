@@ -209,6 +209,25 @@ func are(a, b reflect.Value, kinds ...reflect.Kind) bool {
 	return amatch && bmatch
 }
 
+func areType(a, b reflect.Value, types ...reflect.Type) bool {
+	var amatch, bmatch bool
+
+	for _, t := range types {
+		if a.Kind() != reflect.Invalid {
+			if a.Type() == t {
+				amatch = true
+			}
+		}
+		if b.Kind() != reflect.Invalid {
+			if b.Type() == t {
+				bmatch = true
+			}
+		}
+	}
+
+	return amatch && bmatch
+}
+
 func copyAppend(src []string, elems ...string) []string {
 	dst := make([]string, len(src)+len(elems))
 	copy(dst, src)

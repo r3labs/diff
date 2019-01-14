@@ -6,9 +6,12 @@ package diff
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
+
+var currentTime = time.Now()
 
 type tistruct struct {
 	Name  string `diff:"name,identifier"`
@@ -35,6 +38,7 @@ type tstruct struct {
 	Bool            bool              `diff:"bool"`
 	Values          []string          `diff:"values"`
 	Map             map[string]string `diff:"map"`
+	Time            time.Time         `diff:"time"`
 	Pointer         *string           `diff:"pointer"`
 	Ignored         bool              `diff:"-"`
 	Identifiables   []tistruct        `diff:"identifiables"`
@@ -222,6 +226,13 @@ func TestDiff(t *testing.T) {
 			"struct-bool-update", tstruct{Bool: true}, tstruct{Bool: false},
 			Changelog{
 				Change{Type: UPDATE, Path: []string{"bool"}, From: true, To: false},
+			},
+			nil,
+		},
+		{
+			"struct-time-update", tstruct{}, tstruct{Time: currentTime},
+			Changelog{
+				Change{Type: UPDATE, Path: []string{"time"}, From: time.Time{}, To: currentTime},
 			},
 			nil,
 		},
