@@ -6,9 +6,14 @@ package diff
 
 import (
 	"reflect"
+	"time"
 )
 
 func (cl *Changelog) diffStruct(path []string, a, b reflect.Value) error {
+	if areType(a, b, reflect.TypeOf(time.Time{})) {
+		return cl.diffTime(path, a, b)
+	}
+
 	if a.Kind() == reflect.Invalid {
 		return cl.structValues(CREATE, path, b)
 	}
