@@ -23,18 +23,20 @@ func (cl *Changelog) diffSlice(path []string, a, b reflect.Value) error {
 func (cl *Changelog) diffSliceGeneric(path []string, a, b reflect.Value) error {
 	missing := NewComparativeList()
 
+	slice := sliceTracker{}
 	for i := 0; i < a.Len(); i++ {
 		ae := a.Index(i)
 
-		if !sliceHas(b, ae) {
+		if !slice.has(b, ae) {
 			missing.addA(i, &ae)
 		}
 	}
 
+	slice = sliceTracker{}
 	for i := 0; i < b.Len(); i++ {
 		be := b.Index(i)
 
-		if !sliceHas(a, be) {
+		if !slice.has(a, be) {
 			missing.addB(i, &be)
 		}
 	}
@@ -73,10 +75,23 @@ func (cl *Changelog) diffSliceComparative(path []string, a, b reflect.Value) err
 	return cl.diffComparative(path, c)
 }
 
-func sliceHas(s, v reflect.Value) bool {
+// keeps track of elements that have already been matched, to stop duplicate matches from occuring
+type sliceTracker []bool
+
+func (st *sliceTracker) has(s, v reflect.Value) bool {
+	if len(*st) != s.Len() {
+		(*st) = make([]bool, s.Len(), s.Len())
+	}
+
 	for i := 0; i < s.Len(); i++ {
+		// skip already matched elements
+		if (*st)[i] {
+			continue
+		}
+
 		x := s.Index(i)
 		if reflect.DeepEqual(x.Interface(), v.Interface()) {
+			(*st)[i] = true
 			return true
 		}
 	}

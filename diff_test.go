@@ -325,6 +325,13 @@ func TestDiff(t *testing.T) {
 			},
 			nil,
 		},
+		{
+			"slice-duplicate-items", []int{1}, []int{1, 1},
+			Changelog{
+				Change{Type: CREATE, Path: []string{"1"}, From: nil, To: 1},
+			},
+			nil,
+		},
 	}
 
 	for _, tc := range cases {
