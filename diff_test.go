@@ -174,6 +174,13 @@ func TestDiff(t *testing.T) {
 			nil,
 		},
 		{
+			"nested-map-interface-insert", map[string]map[string]interface{}{"a": {"test": "123"}}, map[string]map[string]interface{}{"a": {"test": "123", "tset": "456"}},
+			Changelog{
+				Change{Type: CREATE, Path: []string{"a", "tset"}, To: "456"},
+			},
+			nil,
+		},
+		{
 			"nested-map-update", map[string]map[string]string{"a": {"test": "123"}}, map[string]map[string]string{"a": {"test": "456"}},
 			Changelog{
 				Change{Type: UPDATE, Path: []string{"a", "test"}, From: "123", To: "456"},
