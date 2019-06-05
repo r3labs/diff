@@ -59,7 +59,10 @@ func (cl *Changelog) mapValues(t string, path []string, a reflect.Value) error {
 	}
 
 	for i := 0; i < len(*cl); i++ {
-		(*cl)[i] = swapChange(t, (*cl)[i])
+		// only swap changes on the relevant map
+		if pathmatch(path, (*cl)[i].Path) {
+			(*cl)[i] = swapChange(t, (*cl)[i])
+		}
 	}
 
 	return nil
