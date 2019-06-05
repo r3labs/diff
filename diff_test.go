@@ -339,6 +339,15 @@ func TestDiff(t *testing.T) {
 			},
 			nil,
 		},
+		{
+			"mixed-slice-map", []map[string]interface{}{{"name": "name1", "type": []string{"null", "string"}}}, []map[string]interface{}{{"name": "name1", "type": []string{"null", "int"}}, {"name": "name2", "type": []string{"null", "string"}}},
+			Changelog{
+				Change{Type: UPDATE, Path: []string{"0", "type", "1"}, From: "string", To: "int"},
+				Change{Type: CREATE, Path: []string{"1", "name"}, From: nil, To: "name2"},
+				Change{Type: CREATE, Path: []string{"1", "type"}, From: nil, To: []string{"null", "string"}},
+			},
+			nil,
+		},
 	}
 
 	for _, tc := range cases {
