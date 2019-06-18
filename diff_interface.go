@@ -6,14 +6,14 @@ package diff
 
 import "reflect"
 
-func (cl *Changelog) diffInterface(path []string, a, b reflect.Value) error {
+func (d *Differ) diffInterface(path []string, a, b reflect.Value) error {
 	if a.Kind() == reflect.Invalid {
-		cl.add(CREATE, path, nil, b.Interface())
+		d.cl.add(CREATE, path, nil, b.Interface())
 		return nil
 	}
 
 	if b.Kind() == reflect.Invalid {
-		cl.add(DELETE, path, a.Interface(), nil)
+		d.cl.add(DELETE, path, a.Interface(), nil)
 		return nil
 	}
 
@@ -26,14 +26,14 @@ func (cl *Changelog) diffInterface(path []string, a, b reflect.Value) error {
 	}
 
 	if a.IsNil() {
-		cl.add(UPDATE, path, nil, b.Interface())
+		d.cl.add(UPDATE, path, nil, b.Interface())
 		return nil
 	}
 
 	if b.IsNil() {
-		cl.add(UPDATE, path, a.Interface(), nil)
+		d.cl.add(UPDATE, path, a.Interface(), nil)
 		return nil
 	}
 
-	return cl.diff(path, a.Elem(), b.Elem())
+	return d.diff(path, a.Elem(), b.Elem())
 }
