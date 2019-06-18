@@ -4,10 +4,24 @@
 
 package diff
 
-import "reflect"
+import (
+	"reflect"
+)
 
 func (cl *Changelog) diffPtr(path []string, a, b reflect.Value) error {
 	if a.Kind() != b.Kind() {
+		if a.Kind() == reflect.Invalid {
+			if !b.IsNil() {
+				return cl.diff(path, reflect.ValueOf(nil), reflect.Indirect(b))
+			}
+		}
+
+		if b.Kind() == reflect.Invalid {
+			if !a.IsNil() {
+				return cl.diff(path, reflect.Indirect(a), reflect.ValueOf(nil))
+			}
+		}
+
 		return ErrTypeMismatch
 	}
 

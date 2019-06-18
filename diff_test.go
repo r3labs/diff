@@ -9,9 +9,13 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var currentTime = time.Now()
+
+var struct1 = tmstruct{Bar: 1, Foo: "one"}
+var struct2 = tmstruct{Bar: 2, Foo: "two"}
 
 type tistruct struct {
 	Name  string `diff:"name,identifier"`
@@ -308,16 +312,6 @@ func TestDiff(t *testing.T) {
 			ErrTypeMismatch,
 		},
 		{
-			"mismatched-values-struct-nil", nil, &tstruct{Identifiables: []tistruct{{"one", 1}}},
-			Changelog{},
-			ErrTypeMismatch,
-		},
-		{
-			"mismatched-values-nil-struct", &tstruct{Identifiables: []tistruct{{"one", 1}}}, nil,
-			Changelog{},
-			ErrTypeMismatch,
-		},
-		{
 			"omittable", tstruct{Ignored: false}, tstruct{Ignored: true},
 			Changelog{},
 			nil,
@@ -348,6 +342,26 @@ func TestDiff(t *testing.T) {
 			},
 			nil,
 		},
+		{
+			"map-string-pointer-create",
+			map[string]*tmstruct{"one": &struct1},
+			map[string]*tmstruct{"one": &struct1, "two": &struct2},
+			Changelog{
+				Change{Type: CREATE, Path: []string{"two", "foo"}, From: nil, To: "two"},
+				Change{Type: CREATE, Path: []string{"two", "bar"}, From: nil, To: 2},
+			},
+			nil,
+		},
+		{
+			"map-string-pointer-delete",
+			map[string]*tmstruct{"one": &struct1, "two": &struct2},
+			map[string]*tmstruct{"one": &struct1},
+			Changelog{
+				Change{Type: DELETE, Path: []string{"two", "foo"}, From: "two", To: nil},
+				Change{Type: DELETE, Path: []string{"two", "bar"}, From: 2, To: nil},
+			},
+			nil,
+		},
 	}
 
 	for _, tc := range cases {
@@ -355,7 +369,7 @@ func TestDiff(t *testing.T) {
 			cl, err := Diff(tc.A, tc.B)
 
 			assert.Equal(t, tc.Error, err)
-			assert.Equal(t, len(tc.Changelog), len(cl))
+			require.Equal(t, len(tc.Changelog), len(cl))
 
 			for i, c := range cl {
 				assert.Equal(t, tc.Changelog[i].Type, c.Type)
