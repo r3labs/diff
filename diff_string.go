@@ -22,7 +22,7 @@ func (cl *Changelog) diffString(path []string, a, b reflect.Value) error {
 	}
 
 	if a.String() != b.String() {
-		cl.add(UPDATE, path, a.Interface(), b.Interface())
+		cl.add(UPDATE, path, a.String(), b.String())
 	}
 
 	return nil
