@@ -381,6 +381,99 @@ func TestDiff(t *testing.T) {
 	}
 }
 
+func TestDiffSliceOrdering(t *testing.T) {
+	cases := []struct {
+		Name      string
+		A, B      interface{}
+		Changelog Changelog
+		Error     error
+	}{
+		{
+			"int-slice-insert-in-middle", []int{1, 2, 4}, []int{1, 2, 3, 4},
+			Changelog{
+				Change{Type: UPDATE, Path: []string{"2"}, From: 4, To: 3},
+				Change{Type: CREATE, Path: []string{"3"}, To: 4},
+			},
+			nil,
+		},
+		{
+			"int-slice-delete", []int{1, 2, 3}, []int{1, 3},
+			Changelog{
+				Change{Type: UPDATE, Path: []string{"1"}, From: 2, To: 3},
+				Change{Type: DELETE, Path: []string{"2"}, From: 3},
+			},
+			nil,
+		},
+		{
+			"int-slice-insert-delete", []int{1, 2, 3}, []int{1, 3, 4},
+			Changelog{
+				Change{Type: UPDATE, Path: []string{"1"}, From: 2, To: 3},
+				Change{Type: UPDATE, Path: []string{"2"}, From: 3, To: 4},
+			},
+			nil,
+		},
+		{
+			"int-slice-reorder", []int{1, 2, 3}, []int{1, 3, 2},
+			Changelog{
+				Change{Type: UPDATE, Path: []string{"1"}, From: 2, To: 3},
+				Change{Type: UPDATE, Path: []string{"2"}, From: 3, To: 2},
+			},
+			nil,
+		},
+		{
+			"string-slice-delete", []string{"1", "2", "3"}, []string{"1", "3"},
+			Changelog{
+				Change{Type: UPDATE, Path: []string{"1"}, From: "2", To: "3"},
+				Change{Type: DELETE, Path: []string{"2"}, From: "3"},
+			},
+			nil,
+		},
+		{
+			"string-slice-insert-delete", []string{"1", "2", "3"}, []string{"1", "3", "4"},
+			Changelog{
+				Change{Type: UPDATE, Path: []string{"1"}, From: "2", To: "3"},
+				Change{Type: UPDATE, Path: []string{"2"}, From: "3", To: "4"},
+			},
+			nil,
+		},
+		{
+			"string-slice-reorder", []string{"1", "2", "3"}, []string{"1", "3", "2"},
+			Changelog{
+				Change{Type: UPDATE, Path: []string{"1"}, From: "2", To: "3"},
+				Change{Type: UPDATE, Path: []string{"2"}, From: "3", To: "2"},
+			},
+			nil,
+		},
+		{
+			"nested-slice-delete", map[string][]int{"a": []int{1, 2, 3}}, map[string][]int{"a": []int{1, 3}},
+			Changelog{
+				Change{Type: UPDATE, Path: []string{"a", "1"}, From: 2, To: 3},
+				Change{Type: DELETE, Path: []string{"a", "2"}, From: 3},
+			},
+			nil,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.Name, func(t *testing.T) {
+			d, err := NewDiffer(SliceOrdering(true))
+			require.Nil(t, err)
+			cl, err := d.Diff(tc.A, tc.B)
+
+			assert.Equal(t, tc.Error, err)
+			require.Equal(t, len(tc.Changelog), len(cl))
+
+			for i, c := range cl {
+				assert.Equal(t, tc.Changelog[i].Type, c.Type)
+				assert.Equal(t, tc.Changelog[i].Path, c.Path)
+				assert.Equal(t, tc.Changelog[i].From, c.From)
+				assert.Equal(t, tc.Changelog[i].To, c.To)
+			}
+		})
+	}
+
+}
+
 func TestFilter(t *testing.T) {
 	cases := []struct {
 		Name     string
@@ -459,15 +552,25 @@ func TestStructValues(t *testing.T) {
 }
 
 func TestDiffingOptions(t *testing.T) {
-	d, err := NewDiffer(SliceOrdering(true))
+	d, err := NewDiffer(SliceOrdering(false))
 	require.Nil(t, err)
 
-	assert.True(t, d.SliceOrdering)
+	assert.False(t, d.SliceOrdering)
 
 	cl, err := d.Diff([]int{1, 2, 3}, []int{1, 3, 2})
 	require.Nil(t, err)
 
 	assert.Len(t, cl, 0)
+
+	d, err = NewDiffer(SliceOrdering(true))
+	require.Nil(t, err)
+
+	assert.True(t, d.SliceOrdering)
+
+	cl, err = d.Diff([]int{1, 2, 3}, []int{1, 3, 2})
+	require.Nil(t, err)
+
+	assert.Len(t, cl, 2)
 
 	// some other options..
 }
