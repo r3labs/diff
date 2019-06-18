@@ -8,19 +8,19 @@ import (
 	"reflect"
 )
 
-func (cl *Changelog) diffSlice(path []string, a, b reflect.Value) error {
+func (d *Differ) diffSlice(path []string, a, b reflect.Value) error {
 	if a.Kind() != b.Kind() {
 		return ErrTypeMismatch
 	}
 
 	if comparative(a, b) {
-		return cl.diffSliceComparative(path, a, b)
+		return d.diffSliceComparative(path, a, b)
 	}
 
-	return cl.diffSliceGeneric(path, a, b)
+	return d.diffSliceGeneric(path, a, b)
 }
 
-func (cl *Changelog) diffSliceGeneric(path []string, a, b reflect.Value) error {
+func (d *Differ) diffSliceGeneric(path []string, a, b reflect.Value) error {
 	missing := NewComparativeList()
 
 	slice := sliceTracker{}
@@ -46,10 +46,10 @@ func (cl *Changelog) diffSliceGeneric(path []string, a, b reflect.Value) error {
 		return nil
 	}
 
-	return cl.diffComparative(path, missing)
+	return d.diffComparative(path, missing)
 }
 
-func (cl *Changelog) diffSliceComparative(path []string, a, b reflect.Value) error {
+func (d *Differ) diffSliceComparative(path []string, a, b reflect.Value) error {
 	c := NewComparativeList()
 
 	for i := 0; i < a.Len(); i++ {
@@ -72,7 +72,7 @@ func (cl *Changelog) diffSliceComparative(path []string, a, b reflect.Value) err
 		}
 	}
 
-	return cl.diffComparative(path, c)
+	return d.diffComparative(path, c)
 }
 
 // keeps track of elements that have already been matched, to stop duplicate matches from occuring

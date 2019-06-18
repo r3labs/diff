@@ -457,3 +457,17 @@ func TestStructValues(t *testing.T) {
 		})
 	}
 }
+
+func TestDiffingOptions(t *testing.T) {
+	d, err := NewDiffer(SliceOrdering(true))
+	require.Nil(t, err)
+
+	assert.True(t, d.SliceOrdering)
+
+	cl, err := d.Diff([]int{1, 2, 3}, []int{1, 3, 2})
+	require.Nil(t, err)
+
+	assert.Len(t, cl, 0)
+
+	// some other options..
+}
