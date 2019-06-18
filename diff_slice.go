@@ -27,7 +27,7 @@ func (d *Differ) diffSliceGeneric(path []string, a, b reflect.Value) error {
 	for i := 0; i < a.Len(); i++ {
 		ae := a.Index(i)
 
-		if !slice.has(b, ae) {
+		if (d.SliceOrdering && !hasAtSameIndex(b, ae, i)) || (!d.SliceOrdering && !slice.has(b, ae)) {
 			missing.addA(i, &ae)
 		}
 	}
@@ -36,7 +36,7 @@ func (d *Differ) diffSliceGeneric(path []string, a, b reflect.Value) error {
 	for i := 0; i < b.Len(); i++ {
 		be := b.Index(i)
 
-		if !slice.has(a, be) {
+		if (d.SliceOrdering && !hasAtSameIndex(a, be, i)) || (!d.SliceOrdering && !slice.has(a, be)) {
 			missing.addB(i, &be)
 		}
 	}
@@ -108,4 +108,14 @@ func getFinalValue(t reflect.Value) reflect.Value {
 	default:
 		return t
 	}
+}
+
+func hasAtSameIndex(s, v reflect.Value, atIndex int) bool {
+	// check the element in the slice at atIndex to see if it matches value, if it is a valid index into the slice
+	if atIndex < s.Len() {
+		x := s.Index(atIndex)
+		return reflect.DeepEqual(x.Interface(), v.Interface())
+	}
+
+	return false
 }
