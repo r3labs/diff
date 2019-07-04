@@ -6,6 +6,7 @@ package diff
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
@@ -199,7 +200,7 @@ func idstring(v interface{}) string {
 	case int:
 		return strconv.Itoa(v.(int))
 	default:
-		return ""
+		return fmt.Sprint(v)
 	}
 }
 
