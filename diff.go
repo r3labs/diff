@@ -30,8 +30,9 @@ const (
 
 // Differ a configurable diff instance
 type Differ struct {
-	SliceOrdering bool
-	cl            Changelog
+	SliceOrdering       bool
+	DisableStructValues bool
+	cl                  Changelog
 }
 
 // Changelog stores a list of changed items

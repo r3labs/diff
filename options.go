@@ -7,3 +7,12 @@ func SliceOrdering(enabled bool) func(d *Differ) error {
 		return nil
 	}
 }
+
+// DisableStructValues disables populating a seperate change for each item in a struct,
+// where the struct is being compared to a nil value
+func DisableStructValues() func(d *Differ) error {
+	return func(d *Differ) error {
+		d.DisableStructValues = true
+		return nil
+	}
+}

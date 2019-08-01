@@ -15,10 +15,18 @@ func (d *Differ) diffStruct(path []string, a, b reflect.Value) error {
 	}
 
 	if a.Kind() == reflect.Invalid {
+		if d.DisableStructValues {
+			d.cl.add(CREATE, path, nil, b.Interface())
+			return nil
+		}
 		return d.structValues(CREATE, path, b)
 	}
 
 	if b.Kind() == reflect.Invalid {
+		if d.DisableStructValues {
+			d.cl.add(DELETE, path, a.Interface(), nil)
+			return nil
+		}
 		return d.structValues(DELETE, path, a)
 	}
 
