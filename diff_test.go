@@ -48,6 +48,7 @@ type tstruct struct {
 	Identifiables   []tistruct        `diff:"identifiables"`
 	Unidentifiables []tuistruct       `diff:"unidentifiables"`
 	Nested          tnstruct          `diff:"nested"`
+	private         int               `diff:"private"`
 }
 
 func sptr(s string) *string {
@@ -362,6 +363,15 @@ func TestDiff(t *testing.T) {
 			},
 			nil,
 		},
+		{
+			"private-struct-field",
+			tstruct{private: 1},
+			tstruct{private: 4},
+			Changelog{
+				Change{Type: UPDATE, Path: []string{"private"}, From: int64(1), To: int64(4)},
+			},
+			nil,
+		},
 	}
 
 	for _, tc := range cases {
@@ -573,4 +583,10 @@ func TestDiffingOptions(t *testing.T) {
 	assert.Len(t, cl, 2)
 
 	// some other options..
+}
+
+func TestDiffPrivateField(t *testing.T) {
+	cl, err := Diff(tstruct{private: 1}, tstruct{private: 3})
+	require.Nil(t, err)
+	assert.Len(t, cl, 1)
 }
