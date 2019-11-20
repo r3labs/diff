@@ -6,6 +6,7 @@ package diff
 
 import (
 	"reflect"
+	"time"
 )
 
 func (d *Differ) diffTime(path []string, a, b reflect.Value) error {
@@ -23,7 +24,10 @@ func (d *Differ) diffTime(path []string, a, b reflect.Value) error {
 		return ErrTypeMismatch
 	}
 
-	if a.Interface() != b.Interface() {
+	// Marshal and unmarshal time type will lose accuracy. Millisecond level accuracy may be enough.
+	ta, tb := a.Interface().(time.Time).Round(time.Millisecond), b.Interface().(time.Time).Round(time.Millisecond)
+
+	if ta != tb {
 		d.cl.add(UPDATE, path, a.Interface(), b.Interface())
 	}
 
