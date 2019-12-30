@@ -128,6 +128,8 @@ func (d *Differ) diff(path []string, a, b reflect.Value) error {
 		return d.diffPtr(path, a, b)
 	case are(a, b, reflect.Interface, reflect.Invalid):
 		return d.diffInterface(path, a, b)
+	case are(a, b, reflect.Array, reflect.Invalid):
+		return d.diffArray(path, a, b)
 	default:
 		return errors.New("unsupported type: " + a.Kind().String())
 	}
