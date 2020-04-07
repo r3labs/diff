@@ -9,6 +9,16 @@ import (
 )
 
 func (d *Differ) diffSlice(path []string, a, b reflect.Value) error {
+	if a.Kind() == reflect.Invalid {
+		d.cl.add(CREATE, path, nil, b.Interface())
+		return nil
+	}
+
+	if b.Kind() == reflect.Invalid {
+		d.cl.add(DELETE, path, a.Interface(), nil)
+		return nil
+	}
+
 	if a.Kind() != b.Kind() {
 		return ErrTypeMismatch
 	}
