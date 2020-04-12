@@ -5,6 +5,7 @@
 package diff
 
 import (
+	"reflect"
 	"testing"
 	"time"
 
@@ -588,5 +589,48 @@ func TestDiffingOptions(t *testing.T) {
 func TestDiffPrivateField(t *testing.T) {
 	cl, err := Diff(tstruct{private: 1}, tstruct{private: 3})
 	require.Nil(t, err)
+	assert.Len(t, cl, 1)
+}
+
+type testType string
+type testTypeDiffer struct{}
+
+func (testTypeDiffer) Match(a, b reflect.Value) bool {
+	return areType(a, b, reflect.TypeOf(testType("")))
+}
+func (testTypeDiffer) Diff(cl *MutableChangelog, path []string, a, b reflect.Value) error {
+	if a.String() != "custom" && b.String() != "match" {
+		cl.Add(UPDATE, path, a.Interface(), b.Interface())
+	}
+	return nil
+}
+
+func TestCustomDiffer(t *testing.T) {
+	type custom struct {
+		T testType
+	}
+
+	d, err := NewDiffer(
+		CustomValueDiffers(
+			testTypeDiffer{},
+		),
+	)
+	require.Nil(t, err)
+
+	cl, err := d.Diff(custom{"custom"}, custom{"match"})
+	require.Nil(t, err)
+
+	assert.Len(t, cl, 0)
+
+	d, err = NewDiffer(
+		CustomValueDiffers(
+			testTypeDiffer{},
+		),
+	)
+	require.Nil(t, err)
+
+	cl, err = d.Diff(custom{"same"}, custom{"same"})
+	require.Nil(t, err)
+
 	assert.Len(t, cl, 1)
 }

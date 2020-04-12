@@ -32,11 +32,15 @@ const (
 type Differ struct {
 	SliceOrdering       bool
 	DisableStructValues bool
+	customValueDiffers  []ValueDiffer
 	cl                  Changelog
 }
 
 // Changelog stores a list of changed items
 type Changelog []Change
+
+// MutableChangelog is a changelog meant to be mutated
+type MutableChangelog Changelog
 
 // Change stores information about a changed item
 type Change struct {
@@ -44,6 +48,12 @@ type Change struct {
 	Path []string    `json:"path"`
 	From interface{} `json:"from"`
 	To   interface{} `json:"to"`
+}
+
+// ValueDiffer is an interface for custom differs
+type ValueDiffer interface {
+	Match(a, b reflect.Value) bool
+	Diff(cl *MutableChangelog, path []string, a, b reflect.Value) error
 }
 
 // Changed returns true if both values differ
@@ -107,6 +117,22 @@ func (d *Differ) diff(path []string, a, b reflect.Value) error {
 		return ErrTypeMismatch
 	}
 
+	// first go through custom diff functions
+	if len(d.customValueDiffers) > 0 {
+		mcl := MutableChangelog(d.cl)
+		for _, vd := range d.customValueDiffers {
+			if vd.Match(a, b) {
+				err := vd.Diff(&mcl, path, a, b)
+				if err != nil {
+					return err
+				}
+				d.cl = Changelog(mcl)
+				return nil
+			}
+		}
+	}
+
+	// then built-in diff functions
 	switch {
 	case are(a, b, reflect.Struct, reflect.Invalid):
 		return d.diffStruct(path, a, b)
@@ -140,6 +166,13 @@ func (cl *Changelog) add(t string, path []string, from, to interface{}) {
 		From: from,
 		To:   to,
 	})
+}
+
+// Add adds a change to the changelog
+func (cl *MutableChangelog) Add(t string, path []string, from, to interface{}) {
+	d := Changelog(*cl)
+	d.add(t, path, from, to)
+	*cl = MutableChangelog(d)
 }
 
 func tagName(f reflect.StructField) string {
