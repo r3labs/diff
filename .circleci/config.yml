@@ -7,11 +7,5 @@ jobs:
      steps:
        - checkout
        - run:
-           name: Install Dependencies
-           command: make dev-deps
-       - run:
-           name: Code Analysis
-           command: make lint
-       - run:
            name: Unit Tests
            command: make test
