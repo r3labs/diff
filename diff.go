@@ -256,7 +256,7 @@ func are(a, b reflect.Value, kinds ...reflect.Kind) bool {
 	return amatch && bmatch
 }
 
-func areType(a, b reflect.Value, types ...reflect.Type) bool {
+func AreType(a, b reflect.Value, types ...reflect.Type) bool {
 	var amatch, bmatch bool
 
 	for _, t := range types {

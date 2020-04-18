@@ -10,7 +10,7 @@ import (
 )
 
 func (d *Differ) diffStruct(path []string, a, b reflect.Value) error {
-	if areType(a, b, reflect.TypeOf(time.Time{})) {
+	if AreType(a, b, reflect.TypeOf(time.Time{})) {
 		return d.diffTime(path, a, b)
 	}
 

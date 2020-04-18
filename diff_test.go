@@ -596,7 +596,7 @@ type testType string
 type testTypeDiffer struct{}
 
 func (testTypeDiffer) Match(a, b reflect.Value) bool {
-	return areType(a, b, reflect.TypeOf(testType("")))
+	return AreType(a, b, reflect.TypeOf(testType("")))
 }
 func (testTypeDiffer) Diff(cl *Changelog, path []string, a, b reflect.Value) error {
 	if a.String() != "custom" && b.String() != "match" {
