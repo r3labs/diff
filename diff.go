@@ -32,6 +32,7 @@ const (
 type Differ struct {
 	SliceOrdering       bool
 	DisableStructValues bool
+	customValueDiffers  []ValueDiffer
 	cl                  Changelog
 }
 
@@ -44,6 +45,12 @@ type Change struct {
 	Path []string    `json:"path"`
 	From interface{} `json:"from"`
 	To   interface{} `json:"to"`
+}
+
+// ValueDiffer is an interface for custom differs
+type ValueDiffer interface {
+	Match(a, b reflect.Value) bool
+	Diff(cl *Changelog, path []string, a, b reflect.Value) error
 }
 
 // Changed returns true if both values differ
@@ -107,6 +114,20 @@ func (d *Differ) diff(path []string, a, b reflect.Value) error {
 		return ErrTypeMismatch
 	}
 
+	// first go through custom diff functions
+	if len(d.customValueDiffers) > 0 {
+		for _, vd := range d.customValueDiffers {
+			if vd.Match(a, b) {
+				err := vd.Diff(&d.cl, path, a, b)
+				if err != nil {
+					return err
+				}
+				return nil
+			}
+		}
+	}
+
+	// then built-in diff functions
 	switch {
 	case are(a, b, reflect.Struct, reflect.Invalid):
 		return d.diffStruct(path, a, b)
@@ -133,7 +154,7 @@ func (d *Differ) diff(path []string, a, b reflect.Value) error {
 	}
 }
 
-func (cl *Changelog) add(t string, path []string, from, to interface{}) {
+func (cl *Changelog) Add(t string, path []string, from, to interface{}) {
 	(*cl) = append((*cl), Change{
 		Type: t,
 		Path: path,
@@ -235,7 +256,7 @@ func are(a, b reflect.Value, kinds ...reflect.Kind) bool {
 	return amatch && bmatch
 }
 
-func areType(a, b reflect.Value, types ...reflect.Type) bool {
+func AreType(a, b reflect.Value, types ...reflect.Type) bool {
 	var amatch, bmatch bool
 
 	for _, t := range types {
