@@ -30,12 +30,12 @@ func (d *Differ) diffPtr(path []string, a, b reflect.Value) error {
 	}
 
 	if a.IsNil() {
-		d.cl.add(UPDATE, path, nil, b.Interface())
+		d.cl.Add(UPDATE, path, nil, b.Interface())
 		return nil
 	}
 
 	if b.IsNil() {
-		d.cl.add(UPDATE, path, a.Interface(), nil)
+		d.cl.Add(UPDATE, path, a.Interface(), nil)
 		return nil
 	}
 
