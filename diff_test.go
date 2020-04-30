@@ -593,12 +593,18 @@ func TestDiffPrivateField(t *testing.T) {
 }
 
 type testType string
-type testTypeDiffer struct{}
+type testTypeDiffer struct {
+	DiffFunc (func(path []string, a, b reflect.Value) error)
+}
 
-func (testTypeDiffer) Match(a, b reflect.Value) bool {
+func (o *testTypeDiffer) InsertParentDiffer(dfunc func(path []string, a, b reflect.Value) error) {
+	o.DiffFunc = dfunc
+}
+
+func (o *testTypeDiffer) Match(a, b reflect.Value) bool {
 	return AreType(a, b, reflect.TypeOf(testType("")))
 }
-func (testTypeDiffer) Diff(cl *Changelog, path []string, a, b reflect.Value) error {
+func (o *testTypeDiffer) Diff(cl *Changelog, path []string, a, b reflect.Value) error {
 	if a.String() != "custom" && b.String() != "match" {
 		cl.Add(UPDATE, path, a.Interface(), b.Interface())
 	}
@@ -612,7 +618,7 @@ func TestCustomDiffer(t *testing.T) {
 
 	d, err := NewDiffer(
 		CustomValueDiffers(
-			testTypeDiffer{},
+			&testTypeDiffer{},
 		),
 	)
 	require.Nil(t, err)
@@ -624,7 +630,7 @@ func TestCustomDiffer(t *testing.T) {
 
 	d, err = NewDiffer(
 		CustomValueDiffers(
-			testTypeDiffer{},
+			&testTypeDiffer{},
 		),
 	)
 	require.Nil(t, err)
@@ -632,5 +638,80 @@ func TestCustomDiffer(t *testing.T) {
 	cl, err = d.Diff(custom{"same"}, custom{"same"})
 	require.Nil(t, err)
 
+	assert.Len(t, cl, 1)
+}
+
+type RecursiveTestStruct struct {
+	Id       int
+	Children []RecursiveTestStruct
+}
+
+type recursiveTestStructDiffer struct {
+	DiffFunc (func(path []string, a, b reflect.Value) error)
+}
+
+func (o *recursiveTestStructDiffer) InsertParentDiffer(dfunc func(path []string, a, b reflect.Value) error) {
+	o.DiffFunc = dfunc
+}
+
+func (o *recursiveTestStructDiffer) Match(a, b reflect.Value) bool {
+	return AreType(a, b, reflect.TypeOf(RecursiveTestStruct{}))
+}
+
+func (o *recursiveTestStructDiffer) Diff(cl *Changelog, path []string, a, b reflect.Value) error {
+	if a.Kind() == reflect.Invalid {
+		cl.Add(CREATE, path, nil, b.Interface())
+		return nil
+	}
+	if b.Kind() == reflect.Invalid {
+		cl.Add(DELETE, path, a.Interface(), nil)
+		return nil
+	}
+	var awt, bwt RecursiveTestStruct
+	awt, _ = a.Interface().(RecursiveTestStruct)
+	bwt, _ = b.Interface().(RecursiveTestStruct)
+	if awt.Id != bwt.Id {
+		cl.Add(UPDATE, path, a.Interface(), b.Interface())
+	}
+	for i := 0; i < a.NumField(); i++ {
+		field := a.Type().Field(i)
+		tname := field.Name
+		if tname != "Children" {
+			continue
+		}
+		af := a.Field(i)
+		bf := b.FieldByName(field.Name)
+		fpath := copyAppend(path, tname)
+		err := o.DiffFunc(fpath, af, bf)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func TestRecursiveCustomDiffer(t *testing.T) {
+	treeA := RecursiveTestStruct{
+		Id:       1,
+		Children: []RecursiveTestStruct{},
+	}
+
+	treeB := RecursiveTestStruct{
+		Id: 1,
+		Children: []RecursiveTestStruct{
+			RecursiveTestStruct{
+				Id:       4,
+				Children: []RecursiveTestStruct{},
+			},
+		},
+	}
+	d, err := NewDiffer(
+		CustomValueDiffers(
+			&recursiveTestStructDiffer{},
+		),
+	)
+	require.Nil(t, err)
+	cl, err := d.Diff(treeA, treeB)
+	require.Nil(t, err)
 	assert.Len(t, cl, 1)
 }

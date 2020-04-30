@@ -21,6 +21,9 @@ func DisableStructValues() func(d *Differ) error {
 func CustomValueDiffers(vd ...ValueDiffer) func(d *Differ) error {
 	return func(d *Differ) error {
 		d.customValueDiffers = append(d.customValueDiffers, vd...)
+		for k, _ := range d.customValueDiffers {
+			d.customValueDiffers[k].InsertParentDiffer(d.diff)
+		}
 		return nil
 	}
 }
