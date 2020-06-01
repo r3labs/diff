@@ -1,4 +1,4 @@
-module github.com/nehbit/diff
+module github.com/r3labs/diff
 
 go 1.13
 
