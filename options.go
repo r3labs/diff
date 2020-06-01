@@ -8,6 +8,14 @@ func SliceOrdering(enabled bool) func(d *Differ) error {
 	}
 }
 
+// TagName sets the tag name to use when getting field names and options
+func TagName(tag string) func(d *Differ) error {
+	return func(d *Differ) error {
+		d.TagName = tag
+		return nil
+	}
+}
+
 // DisableStructValues disables populating a separate change for each item in a struct,
 // where the struct is being compared to a nil value
 func DisableStructValues() func(d *Differ) error {

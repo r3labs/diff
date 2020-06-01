@@ -23,7 +23,7 @@ func (d *Differ) diffSlice(path []string, a, b reflect.Value) error {
 		return ErrTypeMismatch
 	}
 
-	if comparative(a, b) {
+	if d.comparative(a, b) {
 		return d.diffSliceComparative(path, a, b)
 	}
 
@@ -66,7 +66,7 @@ func (d *Differ) diffSliceComparative(path []string, a, b reflect.Value) error {
 		ae := a.Index(i)
 		ak := getFinalValue(ae)
 
-		id := identifier(ak)
+		id := identifier(d.TagName, ak)
 		if id != nil {
 			c.addA(id, &ae)
 		}
@@ -76,7 +76,7 @@ func (d *Differ) diffSliceComparative(path []string, a, b reflect.Value) error {
 		be := b.Index(i)
 		bk := getFinalValue(be)
 
-		id := identifier(bk)
+		id := identifier(d.TagName, bk)
 		if id != nil {
 			c.addB(id, &be)
 		}

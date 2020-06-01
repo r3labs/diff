@@ -32,9 +32,9 @@ func (d *Differ) diffStruct(path []string, a, b reflect.Value) error {
 
 	for i := 0; i < a.NumField(); i++ {
 		field := a.Type().Field(i)
-		tname := tagName(field)
+		tname := tagName(d.TagName, field)
 
-		if tname == "-" || hasTagOption(field, "immutable") {
+		if tname == "-" || hasTagOption(d.TagName, field, "immutable") {
 			continue
 		}
 
@@ -76,7 +76,7 @@ func (d *Differ) structValues(t string, path []string, a reflect.Value) error {
 	for i := 0; i < a.NumField(); i++ {
 
 		field := a.Type().Field(i)
-		tname := tagName(field)
+		tname := tagName(d.TagName, field)
 
 		if tname == "-" {
 			continue
