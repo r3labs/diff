@@ -90,7 +90,10 @@ func NewDiffer(opts ...func(d *Differ) error) (*Differ, error) {
 // values are stored as "created" or "deleted" entries in the changelog,
 // depending on the change type specified
 func StructValues(t string, path []string, s interface{}) (Changelog, error) {
-	var d Differ
+	d := Differ{
+		TagName: "diff",
+	}
+	
 	v := reflect.ValueOf(s)
 
 	return d.cl, d.structValues(t, path, v)
