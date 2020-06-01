@@ -51,6 +51,7 @@ type Change struct {
 type ValueDiffer interface {
 	Match(a, b reflect.Value) bool
 	Diff(cl *Changelog, path []string, a, b reflect.Value) error
+	InsertParentDiffer(dfunc func(path []string, a, b reflect.Value) error)
 }
 
 // Changed returns true if both values differ
