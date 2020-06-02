@@ -30,6 +30,7 @@ const (
 
 // Differ a configurable diff instance
 type Differ struct {
+	TagName             string
 	SliceOrdering       bool
 	DisableStructValues bool
 	customValueDiffers  []ValueDiffer
@@ -62,14 +63,18 @@ func Changed(a, b interface{}) bool {
 
 // Diff returns a changelog of all mutated values from both
 func Diff(a, b interface{}) (Changelog, error) {
-	var d Differ
+	d := Differ{
+		TagName: "diff",
+	}
 
 	return d.cl, d.diff([]string{}, reflect.ValueOf(a), reflect.ValueOf(b))
 }
 
 // NewDiffer creates a new configurable diffing object
 func NewDiffer(opts ...func(d *Differ) error) (*Differ, error) {
-	var d Differ
+	d := Differ{
+		TagName: "diff",
+	}
 
 	for _, opt := range opts {
 		err := opt(&d)
@@ -85,7 +90,10 @@ func NewDiffer(opts ...func(d *Differ) error) (*Differ, error) {
 // values are stored as "created" or "deleted" entries in the changelog,
 // depending on the change type specified
 func StructValues(t string, path []string, s interface{}) (Changelog, error) {
-	var d Differ
+	d := Differ{
+		TagName: "diff",
+	}
+	
 	v := reflect.ValueOf(s)
 
 	return d.cl, d.structValues(t, path, v)
@@ -164,8 +172,8 @@ func (cl *Changelog) Add(t string, path []string, from, to interface{}) {
 	})
 }
 
-func tagName(f reflect.StructField) string {
-	t := f.Tag.Get("diff")
+func tagName(tag string, f reflect.StructField) string {
+	t := f.Tag.Get(tag)
 
 	parts := strings.Split(t, ",")
 	if len(parts) < 1 {
@@ -175,9 +183,9 @@ func tagName(f reflect.StructField) string {
 	return parts[0]
 }
 
-func identifier(v reflect.Value) interface{} {
+func identifier(tag string, v reflect.Value) interface{} {
 	for i := 0; i < v.NumField(); i++ {
-		if hasTagOption(v.Type().Field(i), "identifier") {
+		if hasTagOption(tag, v.Type().Field(i), "identifier") {
 			return v.Field(i).Interface()
 		}
 	}
@@ -185,8 +193,8 @@ func identifier(v reflect.Value) interface{} {
 	return nil
 }
 
-func hasTagOption(f reflect.StructField, opt string) bool {
-	parts := strings.Split(f.Tag.Get("diff"), ",")
+func hasTagOption(tag string, f reflect.StructField, opt string) bool {
+	parts := strings.Split(f.Tag.Get(tag), ",")
 	if len(parts) < 2 {
 		return false
 	}

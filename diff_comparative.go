@@ -31,13 +31,13 @@ func (d *Differ) diffComparative(path []string, c *ComparativeList) error {
 	return nil
 }
 
-func comparative(a, b reflect.Value) bool {
+func (d *Differ) comparative(a, b reflect.Value) bool {
 	if a.Len() > 0 {
 		ae := a.Index(0)
 		ak := getFinalValue(ae)
 
 		if ak.Kind() == reflect.Struct {
-			if identifier(ak) != nil {
+			if identifier(d.TagName, ak) != nil {
 				return true
 			}
 		}
@@ -48,7 +48,7 @@ func comparative(a, b reflect.Value) bool {
 		bk := getFinalValue(be)
 
 		if bk.Kind() == reflect.Struct {
-			if identifier(bk) != nil {
+			if identifier(d.TagName, bk) != nil {
 				return true
 			}
 		}
