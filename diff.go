@@ -93,7 +93,7 @@ func StructValues(t string, path []string, s interface{}) (Changelog, error) {
 	d := Differ{
 		TagName: "diff",
 	}
-	
+
 	v := reflect.ValueOf(s)
 
 	return d.cl, d.structValues(t, path, v)
@@ -114,6 +114,9 @@ func (cl *Changelog) Filter(path []string) Changelog {
 
 // Diff returns a changelog of all mutated values from both
 func (d *Differ) Diff(a, b interface{}) (Changelog, error) {
+	// reset the state of the diff
+	d.cl = Changelog{}
+
 	return d.cl, d.diff([]string{}, reflect.ValueOf(a), reflect.ValueOf(b))
 }
 
