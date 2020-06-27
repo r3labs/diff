@@ -562,6 +562,29 @@ func TestStructValues(t *testing.T) {
 	}
 }
 
+func TestDifferReuse(t *testing.T) {
+	d, err := NewDiffer()
+	require.Nil(t, err)
+
+	cl, err := d.Diff([]string{"1", "2", "3"}, []string{"1"})
+	require.Nil(t, err)
+
+	require.Len(t, cl, 2)
+
+	assert.Equal(t, "2", cl[0].From)
+	assert.Equal(t, nil, cl[0].To)
+	assert.Equal(t, "3", cl[1].From)
+	assert.Equal(t, nil, cl[1].To)
+
+	cl, err = d.Diff([]string{"a", "b"}, []string{"a", "c"})
+	require.Nil(t, err)
+
+	require.Len(t, cl, 1)
+
+	assert.Equal(t, "b", cl[0].From)
+	assert.Equal(t, "c", cl[0].To)
+}
+
 func TestDiffingOptions(t *testing.T) {
 	d, err := NewDiffer(SliceOrdering(false))
 	require.Nil(t, err)
