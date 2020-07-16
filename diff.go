@@ -35,6 +35,7 @@ type Differ struct {
 	DisableStructValues bool
 	customValueDiffers  []ValueDiffer
 	cl                  Changelog
+	AllowTypeMismatch   bool
 }
 
 // Changelog stores a list of changed items
@@ -123,6 +124,10 @@ func (d *Differ) Diff(a, b interface{}) (Changelog, error) {
 func (d *Differ) diff(path []string, a, b reflect.Value) error {
 	// check if types match or are
 	if invalid(a, b) {
+		if d.AllowTypeMismatch {
+			d.cl.Add(UPDATE, path, a.Interface(), b.Interface())
+			return nil
+		}
 		return ErrTypeMismatch
 	}
 
