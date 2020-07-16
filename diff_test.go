@@ -738,3 +738,82 @@ func TestRecursiveCustomDiffer(t *testing.T) {
 	require.Nil(t, err)
 	assert.Len(t, cl, 1)
 }
+
+
+func TestHandleDifferentTypes(t *testing.T) {
+	cases := []struct {
+		Name      string
+		A, B      interface{}
+		Changelog Changelog
+		Error     error
+		HandleTypeMismatch bool
+	}{
+		{
+			"type-change-not-allowed-error",
+			1, "1",
+			nil,
+			ErrTypeMismatch,
+			false,
+		},
+		{
+			"type-change-not-allowed-error-struct",
+			struct {
+				p1 string
+				p2 int
+			}{"1", 1},
+			struct{
+				p1 string
+				p2 string
+			}{"1", "1"},
+			nil,
+			ErrTypeMismatch,
+			false,
+		},
+		{
+			"type-change-allowed",
+			1, "1",
+			Changelog{
+				Change{Type: UPDATE, Path: []string{}, From: 1, To: "1"},
+			},
+			nil,
+			true,
+		},
+		{
+			"type-change-allowed-struct",
+			struct {
+				P1 string
+				P2 int
+				P3 map[string]string
+			}{"1", 1, map[string]string{"1": "1"}},
+			struct{
+				P1 string
+				P2 string
+				P3 string
+			}{"1", "1", "1"},
+			Changelog{
+				Change{Type: UPDATE, Path: []string{"P2"}, From: 1, To: "1"},
+				Change{Type: UPDATE, Path: []string{"P3"}, From: map[string]string{"1": "1"}, To: "1"},
+			},
+			nil,
+			true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.Name, func(t *testing.T) {
+			d, err := NewDiffer(AllowTypeMismatch(tc.HandleTypeMismatch))
+			require.Nil(t, err)
+			cl, err := d.Diff(tc.A, tc.B)
+
+			assert.Equal(t, tc.Error, err)
+			require.Equal(t, len(tc.Changelog), len(cl))
+
+			for i, c := range cl {
+				assert.Equal(t, tc.Changelog[i].Type, c.Type)
+				assert.Equal(t, tc.Changelog[i].Path, c.Path)
+				assert.Equal(t, tc.Changelog[i].From, c.From)
+				assert.Equal(t, tc.Changelog[i].To, c.To)
+			}
+		})
+	}
+}

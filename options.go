@@ -35,3 +35,11 @@ func CustomValueDiffers(vd ...ValueDiffer) func(d *Differ) error {
 		return nil
 	}
 }
+
+// AllowTypeMismatch changed behaviour to report value as "updated" when its type has changed instead of error
+func AllowTypeMismatch(enabled bool) func(d *Differ) error {
+	return func(d *Differ) error {
+		d.AllowTypeMismatch = enabled
+		return nil
+	}
+}
