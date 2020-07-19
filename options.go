@@ -43,3 +43,11 @@ func AllowTypeMismatch(enabled bool) func(d *Differ) error {
 		return nil
 	}
 }
+
+// Filter allows you to determine which fields the differ descends into
+func Filter(f FilterFunc) func(d *Differ) error {
+	return func(d *Differ) error {
+		d.Filter = f
+		return nil
+	}
+}
