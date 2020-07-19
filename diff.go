@@ -36,6 +36,7 @@ type Differ struct {
 	customValueDiffers  []ValueDiffer
 	cl                  Changelog
 	AllowTypeMismatch   bool
+	Filter              FilterFunc
 }
 
 // Changelog stores a list of changed items
@@ -86,6 +87,11 @@ func NewDiffer(opts ...func(d *Differ) error) (*Differ, error) {
 
 	return &d, nil
 }
+
+// FilterFunc is a function that determines whether to descend into a struct field.
+// parent is the struct being examined and field is a field on that struct. path
+// is the path to the field from the root of the diff.
+type FilterFunc func(path []string, parent reflect.Type, field reflect.StructField) bool
 
 // StructValues gets all values from a struct
 // values are stored as "created" or "deleted" entries in the changelog,

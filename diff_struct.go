@@ -47,6 +47,10 @@ func (d *Differ) diffStruct(path []string, a, b reflect.Value) error {
 
 		fpath := copyAppend(path, tname)
 
+		if d.Filter != nil && !d.Filter(fpath, a.Type(), field) {
+			continue
+		}
+
 		err := d.diff(fpath, af, bf)
 		if err != nil {
 			return err
