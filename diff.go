@@ -12,13 +12,6 @@ import (
 	"strings"
 )
 
-var (
-	// ErrTypeMismatch Compared types do not match
-	ErrTypeMismatch = errors.New("types do not match")
-	// ErrInvalidChangeType The specified change values are not unsupported
-	ErrInvalidChangeType = errors.New("change type must be one of 'create' or 'delete'")
-)
-
 const (
 	// CREATE represents when an element has been added
 	CREATE = "create"
