@@ -1,17 +1,16 @@
-# diff
+# Diff [![PkgGoDev](https://pkg.go.dev/badge/github.com/r3labs/diff)](https://pkg.go.dev/github.com/r3labs/diff) [![Go Report Card](https://goreportcard.com/badge/github.com/r3labs/diff)](https://goreportcard.com/report/github.com/r3labs/diff) [![Build Status](https://travis-ci.org/r3labs/diff.svg?branch=master)](https://travis-ci.org/r3labs/diff)
 
 A library for diffing golang structures and values.
 
 Utilizing field tags and reflection, it is able to compare two structures of the same type and create a changelog of all modified values. The produced changelog can easily be serialized to json.
 
-## Build status
-
-* Master [![CircleCI](https://circleci.com/gh/r3labs/diff/tree/master.svg?style=svg)](https://circleci.com/gh/r3labs/diff/tree/master)
+NOTE: All active development now takes place on the v2 branch.
 
 ## Installation
 
+For version 2:
 ```
-go get github.com/r3labs/diff
+go get github.com/r3labs/diff/v2
 ```
 
 ## Changelog Format
@@ -51,23 +50,30 @@ Change{
 
 A diffable value can be/contain any of the following types:
 
-* struct
-* slice
-* string
-* int
-* bool
-* map
-* pointer
+
+| Type         | Supported |
+|--------------|-----------|
+| struct       | ✔         |
+| slice        | ✔         |
+| string       | ✔         |
+| int          | ✔         |
+| bool         | ✔         |
+| map          | ✔         |
+| pointer      | ✔         |
+| custom types | ✔         |
+
+
+Please see the docs for more supported types, options and features.
 
 ### Tags
 
 In order for struct fields to be compared, they must be tagged with a given name. All tag values are prefixed with `diff`. i.e. `diff:"items"`.
 
-* `-` : In the event that you want to exclude a value from the diff, you can use the tag `diff:"-"` and the field will be ignored.
-
-* `identifier` : If you need to compare arrays by a matching identifier and not based on order, you can specify the `identifier` tag. If an identifiable element is found in both the from and to structures, they will be directly compared. i.e. `diff:"name,identifier"`
-
-* `immutable` : Will omit this struct field from diffing. When using `diff.StructValues()` these values will be added to the returned changelog. It's usecase is for when we have nothing to compare a struct to and want to show all of its relevant values.
+| Tag          | Usage                              |
+|--------------|------------------------------------|
+| `-`          | Excludes a value from being diffed |
+| `identifier` | If you need to compare arrays by a matching identifier and not based on order, you can specify the `identifier` tag. If an identifiable element is found in both the from and to structures, they will be directly compared. i.e. `diff:"name, identifier"` |
+| `immutable` | Will omit this struct field from diffing. When using `diff.StructValues()` these values will be added to the returned changelog. It's usecase is for when we have nothing to compare a struct to and want to show all of its relevant values. |
 
 ## Usage
 
@@ -149,7 +155,6 @@ func main() {
 Supported options are:
 
 `SliceOrdering` ensures that the ordering of items in a slice is taken into account
-
 
 ## Running Tests
 
