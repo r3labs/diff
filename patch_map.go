@@ -6,7 +6,7 @@ import (
 )
 
 //renderMap - handle map rendering for patch
-func (c *ChangeValue) renderMap() (m, k, v *reflect.Value){
+func (c *ChangeValue) renderMap() (m, k, v *reflect.Value) {
 
 	//we must tease out the type of the key, we use the msgpack from diff to recreate the key
 	kt := c.target.Type().Key()
@@ -25,7 +25,7 @@ func (c *ChangeValue) renderMap() (m, k, v *reflect.Value){
 	if !x.IsValid() && c.change.Type != DELETE && !c.HasFlag(OptionNoCreate) {
 		x = c.NewElement()
 	}
-	if x.IsValid(){ //Map elements come out as read only so we must convert
+	if x.IsValid() { //Map elements come out as read only so we must convert
 		nv := reflect.New(x.Type()).Elem()
 		nv.Set(x)
 		x = nv
@@ -48,7 +48,7 @@ func (c *ChangeValue) renderMap() (m, k, v *reflect.Value){
 //            container type etc. We have to have special handling for each
 //            type. Set values are more generic even if they must be instanced
 func (c *ChangeValue) deleteMapEntry(m, k, v *reflect.Value) {
-	if m!= nil && m.CanSet() && v.IsValid() {
+	if m != nil && m.CanSet() && v.IsValid() {
 		for x := 0; x < v.NumField(); x++ {
 			if !v.Field(x).IsZero() {
 				m.SetMapIndex(*k, *v)

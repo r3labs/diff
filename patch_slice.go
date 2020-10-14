@@ -3,14 +3,14 @@ package diff
 /**
 	Types are being split out to more closely follow the library structure already
     in place. Keeps the file simpler as well.
- */
+*/
 import (
 	"reflect"
 	"strconv"
 )
 
 //renderSlice - handle slice rendering for patch
-func (c *ChangeValue) renderSlice(){
+func (c *ChangeValue) renderSlice() {
 
 	var err error
 	field := c.change.Path[c.pos]
@@ -25,7 +25,7 @@ func (c *ChangeValue) renderSlice(){
 		x = c.Index(c.index)
 	}
 	if !x.IsValid() {
-		if !c.HasFlag(OptionOmitUnequal){
+		if !c.HasFlag(OptionOmitUnequal) {
 			c.AddError(NewErrorf("Value index %d is invalid", c.index).
 				WithCause(NewError("scanning for Value index")))
 			for c.index = 0; c.index < c.Len(); c.index++ {
@@ -38,7 +38,7 @@ func (c *ChangeValue) renderSlice(){
 			}
 		}
 	}
-	if !x.IsValid() && c.change.Type != DELETE && !c.HasFlag(OptionNoCreate){
+	if !x.IsValid() && c.change.Type != DELETE && !c.HasFlag(OptionNoCreate) {
 		x = c.NewArrayElement()
 	}
 	if !x.IsValid() && c.change.Type == DELETE {
@@ -50,18 +50,18 @@ func (c *ChangeValue) renderSlice(){
 //deleteSliceEntry - deletes are special, they are handled differently based on options
 //              container type etc. We have to have special handling for each
 //              type. Set values are more generic even if they must be instanced
-func (c *ChangeValue) deleteSliceEntry()  {
+func (c *ChangeValue) deleteSliceEntry() {
 	//for a slice with only one element
-	if c.ParentLen() == 1 && c.index != -1{
-		c.ParentSet(reflect.MakeSlice(c.parent.Type(),0,0))
+	if c.ParentLen() == 1 && c.index != -1 {
+		c.ParentSet(reflect.MakeSlice(c.parent.Type(), 0, 0))
 		c.SetFlag(FlagDeleted)
 		//for a slice with multiple elements
-	}else if c.index != -1 { //this is an array delete the element from the parent
+	} else if c.index != -1 { //this is an array delete the element from the parent
 		c.ParentIndex(c.index).Set(c.ParentIndex(c.ParentLen() - 1))
-		c.ParentSet(c.parent.Slice(0, c.ParentLen() - 1))
+		c.ParentSet(c.parent.Slice(0, c.ParentLen()-1))
 		c.SetFlag(FlagDeleted)
 		//for other slice elements, we ignore
-	}else{
+	} else {
 		c.SetFlag(FlagIgnored)
 	}
 }

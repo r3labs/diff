@@ -8,7 +8,7 @@ import "reflect"
 */
 
 //patchStruct - handles the rendering of a struct field
-func (c *ChangeValue) patchStruct(){
+func (c *ChangeValue) patchStruct() {
 
 	field := c.change.Path[c.pos]
 
@@ -19,12 +19,12 @@ func (c *ChangeValue) patchStruct(){
 			c.SetFlag(OptionImmutable)
 			continue
 		}
-		if tname == field || f.Name == field{
+		if tname == field || f.Name == field {
 			x := c.target.Field(i)
 			if hasTagOption("diff", f, "nocreate") {
 				c.SetFlag(OptionNoCreate)
 			}
-			if hasTagOption("diff", f, "omitunequal"){
+			if hasTagOption("diff", f, "omitunequal") {
 				c.SetFlag(OptionOmitUnequal)
 			}
 			c.swap(&x)
@@ -34,7 +34,7 @@ func (c *ChangeValue) patchStruct(){
 }
 
 //track and zero out struct members
-func (c *ChangeValue) deleteStructEntry(){
+func (c *ChangeValue) deleteStructEntry() {
 
 	//deleting a struct value set's it to the 'basic' type
 	c.Set(reflect.Zero(c.target.Type()))

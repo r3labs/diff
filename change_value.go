@@ -18,8 +18,8 @@ type ChangeValue struct {
 
 //swap swaps out the target as we move down the path. Note that a nil
 //     check is foregone here due to the fact we control usage.
-func (c *ChangeValue) swap(newTarget *reflect.Value){
-	if newTarget.IsValid(){
+func (c *ChangeValue) swap(newTarget *reflect.Value) {
+	if newTarget.IsValid() {
 		c.ClearFlag(FlagInvalidTarget)
 		c.parent = c.target
 		c.target = newTarget
@@ -30,14 +30,14 @@ func (c *ChangeValue) swap(newTarget *reflect.Value){
 // Sets a flag on the node and saves the change
 func (c *ChangeValue) SetFlag(flag PatchFlags) {
 	if c != nil {
-		c.flags = c.flags|flag
+		c.flags = c.flags | flag
 	}
 }
 
 //ClearFlag removes just a single flag
 func (c *ChangeValue) ClearFlag(flag PatchFlags) {
 	if c != nil {
-		c.flags = c.flags&^flag
+		c.flags = c.flags &^ flag
 	}
 }
 
@@ -48,12 +48,14 @@ func (c *ChangeValue) HasFlag(flag PatchFlags) bool {
 
 //IsValid echo for is valid
 func (c *ChangeValue) IsValid() bool {
-	if c != nil {return c.target.IsValid() || !c.HasFlag(FlagInvalidTarget)}
+	if c != nil {
+		return c.target.IsValid() || !c.HasFlag(FlagInvalidTarget)
+	}
 	return false
 }
 
 //ParentKind - helps keep us nil safe
-func (c ChangeValue) ParentKind() (reflect.Kind){
+func (c ChangeValue) ParentKind() reflect.Kind {
 	if c.parent != nil {
 		return c.parent.Kind()
 	}
@@ -64,14 +66,14 @@ func (c ChangeValue) ParentKind() (reflect.Kind){
 func (c ChangeValue) ParentLen() (ret int) {
 	if c.parent != nil &&
 		(c.parent.Kind() == reflect.Slice ||
-		 c.parent.Kind() == reflect.Map){
+			c.parent.Kind() == reflect.Map) {
 		ret = c.parent.Len()
 	}
 	return
 }
 
 //ParentSet - nil safe parent set
-func (c *ChangeValue) ParentSet(value reflect.Value){
+func (c *ChangeValue) ParentSet(value reflect.Value) {
 	if c != nil && c.parent != nil {
 		defer func() {
 			if r := recover(); r != nil {
@@ -89,7 +91,7 @@ func (c ChangeValue) Len() int {
 }
 
 //Set echos reflect set
-func (c *ChangeValue) Set(value reflect.Value){
+func (c *ChangeValue) Set(value reflect.Value) {
 	if c != nil {
 		defer func() {
 			if r := recover(); r != nil {
@@ -97,7 +99,7 @@ func (c *ChangeValue) Set(value reflect.Value){
 				c.SetFlag(FlagFailed)
 			}
 		}()
-		if c.HasFlag(OptionImmutable){
+		if c.HasFlag(OptionImmutable) {
 			c.SetFlag(FlagIgnored)
 			return
 		}
@@ -113,7 +115,7 @@ func (c ChangeValue) Index(i int) reflect.Value {
 
 //ParentIndex - get us the parent version, nil safe
 func (c ChangeValue) ParentIndex(i int) (ret reflect.Value) {
-	if c.parent != nil{
+	if c.parent != nil {
 		ret = c.parent.Index(i)
 	}
 	return
@@ -139,7 +141,9 @@ func (c ChangeValue) NewArrayElement() reflect.Value {
 }
 
 //AddError appends errors to this change value
-func (c *ChangeValue) AddError(err error) *ChangeValue{
-	if c != nil {c.err = err}
+func (c *ChangeValue) AddError(err error) *ChangeValue {
+	if c != nil {
+		c.err = err
+	}
 	return c
 }

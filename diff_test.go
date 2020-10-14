@@ -739,13 +739,12 @@ func TestRecursiveCustomDiffer(t *testing.T) {
 	assert.Len(t, cl, 1)
 }
 
-
 func TestHandleDifferentTypes(t *testing.T) {
 	cases := []struct {
-		Name      string
-		A, B      interface{}
-		Changelog Changelog
-		Error     error
+		Name               string
+		A, B               interface{}
+		Changelog          Changelog
+		Error              error
 		HandleTypeMismatch bool
 	}{
 		{
@@ -761,7 +760,7 @@ func TestHandleDifferentTypes(t *testing.T) {
 				p1 string
 				p2 int
 			}{"1", 1},
-			struct{
+			struct {
 				p1 string
 				p2 string
 			}{"1", "1"},
@@ -785,7 +784,7 @@ func TestHandleDifferentTypes(t *testing.T) {
 				P2 int
 				P3 map[string]string
 			}{"1", 1, map[string]string{"1": "1"}},
-			struct{
+			struct {
 				P1 string
 				P2 string
 				P3 string

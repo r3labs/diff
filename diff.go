@@ -38,10 +38,10 @@ type Changelog []Change
 
 // Change stores information about a changed item
 type Change struct {
-	Type string      `json:"type"`
-	Path []string    `json:"path"`
-	From interface{} `json:"from"`
-	To   interface{} `json:"to"`
+	Type   string      `json:"type"`
+	Path   []string    `json:"path"`
+	From   interface{} `json:"from"`
+	To     interface{} `json:"to"`
 	parent interface{} `json:"parent"`
 }
 
@@ -59,7 +59,7 @@ func Changed(a, b interface{}) bool {
 }
 
 // Diff returns a changelog of all mutated values from both
-func Diff(a, b interface{},  opts ...func(d *Differ) error) (Changelog, error) {
+func Diff(a, b interface{}, opts ...func(d *Differ) error) (Changelog, error) {
 	d, err := NewDiffer(opts...)
 	if err != nil {
 		return nil, err
@@ -183,7 +183,7 @@ func (d *Differ) diff(path []string, a, b reflect.Value, parent interface{}) err
 }
 
 func (cl *Changelog) Add(t string, path []string, ftco ...interface{}) {
-	 change := Change{
+	change := Change{
 		Type: t,
 		Path: path,
 		From: ftco[0],

@@ -19,7 +19,7 @@ type DiffError struct {
 }
 
 //Unwrap implement 1.13 unwrap feature for compatibility
-func(s *DiffError) Unwrap() error {
+func (s *DiffError) Unwrap() error {
 	return s.next
 }
 

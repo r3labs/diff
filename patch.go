@@ -37,11 +37,12 @@ import "reflect"
     diff two structs of the same type, then attempt to apply to an entirely
     different struct that is similar in constitution (think interface here) and
     you may in fact get all of the values populated you wished to anyway.
- */
+*/
 
 //Not strictly necessary but might be nice in some cases
 //go:generate stringer -type=PatchFlags
 type PatchFlags uint32
+
 const (
 	OptionCreate PatchFlags = 1 << iota
 	OptionNoCreate
@@ -59,14 +60,32 @@ const (
 )
 
 //PatchLogEntry defines how a DiffLog entry was applied
-type PatchLogEntry struct{
-	Path  []string    `json:"path"`
-	From  interface{} `json:"from"`
-	To    interface{} `json:"to"`
-	Flags PatchFlags  `json:"flags"`
-	Errors error      `json:"errors"`
+type PatchLogEntry struct {
+	Path   []string    `json:"path"`
+	From   interface{} `json:"from"`
+	To     interface{} `json:"to"`
+	Flags  PatchFlags  `json:"flags"`
+	Errors error       `json:"errors"`
 }
 type PatchLog []PatchLogEntry
+
+//HasFlag - convenience function for users
+func (p PatchLogEntry) HasFlag(flag PatchFlags) bool {
+	return (p.Flags & flag) != 0
+}
+
+//Applied - returns true if all change log entries were actually
+//          applied, regardless of if any errors were encountered
+func (p PatchLog) Applied() bool {
+	if p.HasErrors() {
+		for _, ple := range p {
+			if !ple.HasFlag(FlagApplied) {
+				return false
+			}
+		}
+	}
+	return true
+}
 
 //HasErrors - indicates if a patch log contains any errors
 func (p PatchLog) HasErrors() (ret bool) {
@@ -93,7 +112,7 @@ func (p PatchLog) ErrorCount() (ret uint) {
 func Merge(original interface{}, changed interface{}, target interface{}) (PatchLog, error) {
 	if cl, err := Diff(original, changed); err == nil {
 		return Patch(cl, target), nil
-	}else{
+	} else {
 		return nil, err
 	}
 }
@@ -110,17 +129,16 @@ func Patch(cl Changelog, target interface{}) (ret PatchLog) {
 //a simpler format for the consumer
 func NewPatchLogEntry(cv *ChangeValue) PatchLogEntry {
 	return PatchLogEntry{
-		Path: cv.change.Path,
-		From: cv.change.From,
-		To: cv.change.To,
-		Flags: cv.flags,
+		Path:   cv.change.Path,
+		From:   cv.change.From,
+		To:     cv.change.To,
+		Flags:  cv.flags,
 		Errors: cv.err,
 	}
 }
 
-
 //NewChangeValue idiomatic constructor (also invokes render)
-func NewChangeValue(c Change, target interface{}) (ret *ChangeValue){
+func NewChangeValue(c Change, target interface{}) (ret *ChangeValue) {
 	val := reflect.ValueOf(target)
 	ret = &ChangeValue{
 		target: &val,
@@ -135,7 +153,7 @@ func NewChangeValue(c Change, target interface{}) (ret *ChangeValue){
 func renderChangeTarget(c *ChangeValue) {
 
 	//This particular change element may potentially have the immutable flag
-	if c.HasFlag(OptionImmutable){
+	if c.HasFlag(OptionImmutable) {
 		c.AddError(NewError("Option immutable set, cannot apply change"))
 		return
 	} //the we always set a failure, and only unset if we successfully render the element
@@ -175,10 +193,10 @@ func renderChangeTarget(c *ChangeValue) {
 
 	//we've taken care of this path element, are there any more? if so, process
 	//else, let's take some action
-	if c.pos < len(c.change.Path) && !c.HasFlag(FlagInvalidTarget){
+	if c.pos < len(c.change.Path) && !c.HasFlag(FlagInvalidTarget) {
 		renderChangeTarget(c)
 
-	}else{ //we're at the end of the line... set the Value
+	} else { //we're at the end of the line... set the Value
 		switch c.change.Type {
 		case DELETE:
 			switch c.ParentKind() {

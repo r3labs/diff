@@ -222,9 +222,7 @@ func ExamplePrimitiveSlice() {
 		"be",
 		"diff'ed",
 	}
-	slb = []string{
-
-	}
+	slb = []string{}
 
 	patch, err = Diff(sla, slb)
 	if err != nil {
@@ -322,8 +320,8 @@ func ExampleComplexMapPatch() {
 		weight int
 	}
 	type Content struct {
-		Text   string
-		Number float64
+		Text        string
+		Number      float64
 		WholeNumber int
 	}
 	type Attributes struct {
@@ -335,7 +333,7 @@ func ExampleComplexMapPatch() {
 	}
 	a.Labels[Key{Value: "likes"}] = Content{
 		WholeNumber: 10,
-		Number: 23.4,
+		Number:      23.4,
 	}
 
 	a.Labels[Key{Value: "colors"}] = Content{
@@ -364,7 +362,7 @@ func ExampleComplexMapPatch() {
 	}
 	c.Labels[Key{Value: "likes"}] = Content{
 		WholeNumber: 210,
-		Number: 23.4453,
+		Number:      23.4453,
 	}
 
 	changelog, err := Diff(a, b)

@@ -50,7 +50,7 @@ func AllowTypeMismatch(enabled bool) func(d *Differ) error {
 //necessary when embedding structs in slices and arrays. It memory constrained environments, it may be desirable
 //to turn this feature off however from a computational perspective, keeping the complex origin is actually quite
 //cheap so, make sure you're extremely clear on the pitfalls of turning this off prior to doing so.
-func DiscardComplexOrigin()  func(d *Differ) error {
+func DiscardComplexOrigin() func(d *Differ) error {
 	return func(d *Differ) error {
 		d.DiscardParent = true
 		return nil
