@@ -161,14 +161,14 @@ func TestDiff(t *testing.T) {
 		{
 			"map-nil", map[string]string{"one": "test"}, nil,
 			Changelog{
-				Change{Type: DELETE, Path: []string{"one"}, From: "test", To: nil},
+				Change{Type: DELETE, Path: []string{"\xa3one"}, From: "test", To: nil},
 			},
 			nil,
 		},
 		{
 			"nil-map", nil, map[string]string{"one": "test"},
 			Changelog{
-				Change{Type: CREATE, Path: []string{"one"}, From: nil, To: "test"},
+				Change{Type: CREATE, Path: []string{"\xa3one"}, From: nil, To: "test"},
 			},
 			nil,
 		},
@@ -339,8 +339,8 @@ func TestDiff(t *testing.T) {
 			"mixed-slice-map", []map[string]interface{}{{"name": "name1", "type": []string{"null", "string"}}}, []map[string]interface{}{{"name": "name1", "type": []string{"null", "int"}}, {"name": "name2", "type": []string{"null", "string"}}},
 			Changelog{
 				Change{Type: UPDATE, Path: []string{"0", "type", "1"}, From: "string", To: "int"},
-				Change{Type: CREATE, Path: []string{"1", "name"}, From: nil, To: "name2"},
-				Change{Type: CREATE, Path: []string{"1", "type"}, From: nil, To: []string{"null", "string"}},
+				Change{Type: CREATE, Path: []string{"1", "\xa4name"}, From: nil, To: "name2"},
+				Change{Type: CREATE, Path: []string{"1", "\xa4type"}, From: nil, To: []string{"null", "string"}},
 			},
 			nil,
 		},
@@ -617,10 +617,10 @@ func TestDiffPrivateField(t *testing.T) {
 
 type testType string
 type testTypeDiffer struct {
-	DiffFunc (func(path []string, a, b reflect.Value) error)
+	DiffFunc (func(path []string, a, b reflect.Value, p interface{}) error)
 }
 
-func (o *testTypeDiffer) InsertParentDiffer(dfunc func(path []string, a, b reflect.Value) error) {
+func (o *testTypeDiffer) InsertParentDiffer(dfunc func(path []string, a, b reflect.Value, p interface{}) error) {
 	o.DiffFunc = dfunc
 }
 
@@ -670,10 +670,10 @@ type RecursiveTestStruct struct {
 }
 
 type recursiveTestStructDiffer struct {
-	DiffFunc (func(path []string, a, b reflect.Value) error)
+	DiffFunc (func(path []string, a, b reflect.Value, p interface{}) error)
 }
 
-func (o *recursiveTestStructDiffer) InsertParentDiffer(dfunc func(path []string, a, b reflect.Value) error) {
+func (o *recursiveTestStructDiffer) InsertParentDiffer(dfunc func(path []string, a, b reflect.Value, p interface{}) error) {
 	o.DiffFunc = dfunc
 }
 
@@ -705,7 +705,7 @@ func (o *recursiveTestStructDiffer) Diff(cl *Changelog, path []string, a, b refl
 		af := a.Field(i)
 		bf := b.FieldByName(field.Name)
 		fpath := copyAppend(path, tname)
-		err := o.DiffFunc(fpath, af, bf)
+		err := o.DiffFunc(fpath, af, bf, nil)
 		if err != nil {
 			return err
 		}

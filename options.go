@@ -44,6 +44,19 @@ func AllowTypeMismatch(enabled bool) func(d *Differ) error {
 	}
 }
 
+//DiscardComplexOrigin - by default, we are now keeping the complex struct associated with a create entry.
+//This allows us to fix the merge to new object issue of not having enough change log details when allocating
+//new objects. This however is a trade off of memory size and complexity vs correctness which is often only
+//necessary when embedding structs in slices and arrays. It memory constrained environments, it may be desirable
+//to turn this feature off however from a computational perspective, keeping the complex origin is actually quite
+//cheap so, make sure you're extremely clear on the pitfalls of turning this off prior to doing so.
+func DiscardComplexOrigin()  func(d *Differ) error {
+	return func(d *Differ) error {
+		d.DiscardParent = true
+		return nil
+	}
+}
+
 // Filter allows you to determine which fields the differ descends into
 func Filter(f FilterFunc) func(d *Differ) error {
 	return func(d *Differ) error {
