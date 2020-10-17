@@ -64,6 +64,13 @@ func TestDiff(t *testing.T) {
 		Error     error
 	}{
 		{
+			"uint-slice-insert", []uint{1, 2, 3}, []uint{1, 2, 3, 4},
+			Changelog{
+				Change{Type: CREATE, Path: []string{"3"}, To: uint(4)},
+			},
+			nil,
+		},
+		{
 			"int-slice-insert", []int{1, 2, 3}, []int{1, 2, 3, 4},
 			Changelog{
 				Change{Type: CREATE, Path: []string{"3"}, To: 4},
@@ -71,9 +78,24 @@ func TestDiff(t *testing.T) {
 			nil,
 		},
 		{
+			"uint-slice-delete", []uint{1, 2, 3}, []uint{1, 3},
+			Changelog{
+				Change{Type: DELETE, Path: []string{"1"}, From: uint(2)},
+			},
+			nil,
+		},
+		{
 			"int-slice-delete", []int{1, 2, 3}, []int{1, 3},
 			Changelog{
 				Change{Type: DELETE, Path: []string{"1"}, From: 2},
+			},
+			nil,
+		},
+		{
+			"uint-slice-insert-delete", []uint{1, 2, 3}, []uint{1, 3, 4},
+			Changelog{
+				Change{Type: DELETE, Path: []string{"1"}, From: uint(2)},
+				Change{Type: CREATE, Path: []string{"2"}, To: uint(4)},
 			},
 			nil,
 		},
@@ -377,7 +399,13 @@ func TestDiff(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
-			cl, err := Diff(tc.A, tc.B)
+
+			var options []func(d *Differ) error
+			switch tc.Name {
+			case "mixed-slice-map", "nil-map", "map-nil":
+				options = append(options, StructMapKeySupport())
+			}
+			cl, err := Diff(tc.A, tc.B, options...)
 
 			assert.Equal(t, tc.Error, err)
 			require.Equal(t, len(tc.Changelog), len(cl))

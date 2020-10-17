@@ -6,6 +6,7 @@ package diff
 
 import (
 	"errors"
+	"fmt"
 	"github.com/vmihailenco/msgpack"
 	"reflect"
 	"strconv"
@@ -30,6 +31,7 @@ type Differ struct {
 	cl                  Changelog
 	AllowTypeMismatch   bool
 	DiscardParent       bool
+	StructMapKeys       bool
 	Filter              FilterFunc
 }
 
@@ -247,7 +249,7 @@ func swapChange(t string, c Change) Change {
 	return nc
 }
 
-func idstring(v interface{}) string {
+func idComplex(v interface{}) string {
 	switch v.(type) {
 	case string:
 		return v.(string)
@@ -259,6 +261,17 @@ func idstring(v interface{}) string {
 			panic(err)
 		}
 		return string(b)
+	}
+
+}
+func idstring(v interface{}) string {
+	switch v.(type) {
+	case string:
+		return v.(string)
+	case int:
+		return strconv.Itoa(v.(int))
+	default:
+		return fmt.Sprint(v)
 	}
 }
 

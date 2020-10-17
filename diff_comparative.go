@@ -10,7 +10,11 @@ import (
 
 func (d *Differ) diffComparative(path []string, c *ComparativeList, parent interface{}) error {
 	for _, k := range c.keys {
-		fpath := copyAppend(path, idstring(k))
+		id := idstring(k)
+		if d.StructMapKeys {
+			id = idComplex(k)
+		}
+		fpath := copyAppend(path, id)
 
 		nv := reflect.ValueOf(nil)
 

@@ -44,6 +44,17 @@ func AllowTypeMismatch(enabled bool) func(d *Differ) error {
 	}
 }
 
+//StructMapKeySupport - Changelog paths do not provided structured object values for maps that contain complex
+//keys (such as other structs). You must enable this support via an option and it then uses msgpack to encode
+//path elements that are structs. If you don't have this on, and try to patch, your apply will fail for that
+//element.
+func StructMapKeySupport() func(d *Differ) error {
+	return func(d *Differ) error {
+		d.StructMapKeys = true
+		return nil
+	}
+}
+
 //DiscardComplexOrigin - by default, we are now keeping the complex struct associated with a create entry.
 //This allows us to fix the merge to new object issue of not having enough change log details when allocating
 //new objects. This however is a trade off of memory size and complexity vs correctness which is often only

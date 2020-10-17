@@ -5,6 +5,7 @@
 package diff
 
 import (
+	"fmt"
 	"github.com/vmihailenco/msgpack"
 	"reflect"
 )
@@ -52,13 +53,16 @@ func (d *Differ) mapValues(t string, path []string, a reflect.Value) error {
 		ae := a.MapIndex(k)
 		xe := x.MapIndex(k)
 
-		//it's not enough to turn k to a string, we need to able to  marshal a type when
-		//we apply it in patch so... we'll marshal it to JSON
-		b, err := msgpack.Marshal(k.Interface())
-		if err != nil {
-			return err
+		var err error
+		if d.StructMapKeys {
+			//it's not enough to turn k to a string, we need to able to  marshal a type when
+			//we apply it in patch so... we'll marshal it to JSON
+			if b, err := msgpack.Marshal(k.Interface()); err == nil {
+				err = d.diff(append(path, string(b)), xe, ae, a.Interface())
+			}
+		} else {
+			err = d.diff(append(path, fmt.Sprint(k.Interface())), xe, ae, a.Interface())
 		}
-		err = d.diff(append(path, string(b)), xe, ae, a.Interface())
 		if err != nil {
 			return err
 		}

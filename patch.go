@@ -110,7 +110,7 @@ func (p PatchLog) ErrorCount() (ret uint) {
 // Merge is a convenience function that diffs, the original and changed items
 // and merges said changes with target all in one call.
 func Merge(original interface{}, changed interface{}, target interface{}) (PatchLog, error) {
-	if cl, err := Diff(original, changed); err == nil {
+	if cl, err := Diff(original, changed, StructMapKeySupport()); err == nil {
 		return Patch(cl, target), nil
 	} else {
 		return nil, err

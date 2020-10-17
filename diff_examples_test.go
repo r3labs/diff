@@ -187,7 +187,7 @@ func ExamplePrimitiveSlice() {
 		"ok",
 	}
 
-	patch, err := Diff(sla, slb)
+	patch, err := Diff(sla, slb, StructMapKeySupport())
 	if err != nil {
 		fmt.Print("failed to diff sla and slb")
 	}
@@ -300,7 +300,7 @@ func ExampleComplexSlicePatch() {
 	}
 	c := Attributes{}
 
-	changelog, err := Diff(a, b, DiscardComplexOrigin())
+	changelog, err := Diff(a, b, DiscardComplexOrigin(), StructMapKeySupport())
 	if err != nil {
 		panic(err)
 	}
