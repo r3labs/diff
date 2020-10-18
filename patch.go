@@ -1,9 +1,6 @@
 package diff
 
-import (
-	"reflect"
-	"strconv"
-)
+import "reflect"
 
 /**
 	This is a method of applying a changelog to a value or struct. change logs
@@ -40,14 +37,82 @@ import (
     diff two structs of the same type, then attempt to apply to an entirely
     different struct that is similar in constitution (think interface here) and
     you may in fact get all of the values populated you wished to anyway.
- */
+*/
+
+//Not strictly necessary but might be nice in some cases
+//go:generate stringer -type=PatchFlags
+type PatchFlags uint32
+
+const (
+	OptionCreate PatchFlags = 1 << iota
+	OptionNoCreate
+	OptionOmitUnequal
+	OptionImmutable
+	FlagInvalidTarget
+	FlagApplied
+	FlagFailed
+	FlagCreated
+	FlagIgnored
+	FlagDeleted
+	FlagUpdated
+	FlagParentSetApplied
+	FlagParentSetFailed
+)
+
+//PatchLogEntry defines how a DiffLog entry was applied
+type PatchLogEntry struct {
+	Path   []string    `json:"path"`
+	From   interface{} `json:"from"`
+	To     interface{} `json:"to"`
+	Flags  PatchFlags  `json:"flags"`
+	Errors error       `json:"errors"`
+}
+type PatchLog []PatchLogEntry
+
+//HasFlag - convenience function for users
+func (p PatchLogEntry) HasFlag(flag PatchFlags) bool {
+	return (p.Flags & flag) != 0
+}
+
+//Applied - returns true if all change log entries were actually
+//          applied, regardless of if any errors were encountered
+func (p PatchLog) Applied() bool {
+	if p.HasErrors() {
+		for _, ple := range p {
+			if !ple.HasFlag(FlagApplied) {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+//HasErrors - indicates if a patch log contains any errors
+func (p PatchLog) HasErrors() (ret bool) {
+	for _, ple := range p {
+		if ple.Errors != nil {
+			ret = true
+		}
+	}
+	return
+}
+
+//ErrorCount -- counts the number of errors encountered while patching
+func (p PatchLog) ErrorCount() (ret uint) {
+	for _, ple := range p {
+		if ple.Errors != nil {
+			ret++
+		}
+	}
+	return
+}
 
 // Merge is a convenience function that diffs, the original and changed items
 // and merges said changes with target all in one call.
 func Merge(original interface{}, changed interface{}, target interface{}) (PatchLog, error) {
-	if cl, err := Diff(original, changed); err == nil {
+	if cl, err := Diff(original, changed, StructMapKeySupport()); err == nil {
 		return Patch(cl, target), nil
-	}else{
+	} else {
 		return nil, err
 	}
 }
@@ -55,219 +120,98 @@ func Merge(original interface{}, changed interface{}, target interface{}) (Patch
 //Patch... the missing feature.
 func Patch(cl Changelog, target interface{}) (ret PatchLog) {
 	for _, c := range cl {
-		ret = append(ret, NewPatchLogEntry(patch(NewChangeValue(c, target))))
+		ret = append(ret, NewPatchLogEntry(NewChangeValue(c, target)))
 	}
 	return ret
 }
 
-//patch apply an individual change as opposed to a change log
-func patch(c *ChangeValue) (cv *ChangeValue){
-
-	//Can be messy to clean up when doing reflection
-	defer func() {
-		if r := recover(); r != nil {
-			cv.AddError(NewError("cannot set values on target",
-				NewError("passed by value not reference")))
-			cv.SetFlag(FlagInvalidTarget)
-		}
-	}()
-	cv = c
-	cv.val = cv.val.Elem()
-
-	//resolve where we're actually going to set this value
-	cv.index = -1
-	if cv.Kind() == reflect.Struct { //substitute and solve for t (path)
-		for _, p := range cv.change.Path {
-			if cv.Kind() == reflect.Slice {
-				//field better be an index of the slice
-				if cv.index, cv.err = strconv.Atoi(p); cv.err != nil {
-					return cv.AddError(NewErrorf("invalid index in path: %s", p).
-						WithCause(cv.err))
-				}
-				break //last item in a path that's a slice is it's index
-			}
-			if cv.Kind() == reflect.Map {
-				keytype := cv.KeyType()
-				cv.key = reflect.ValueOf(p)
-				cv.key.Convert(keytype)
-				break //same as a slice
-			}
-			cv = renderTargetField(cv, p)
-		}
+//NewPatchLogEntry converts our complicated reflection based struct to
+//a simpler format for the consumer
+func NewPatchLogEntry(cv *ChangeValue) PatchLogEntry {
+	return PatchLogEntry{
+		Path:   cv.change.Path,
+		From:   cv.change.From,
+		To:     cv.change.To,
+		Flags:  cv.flags,
+		Errors: cv.err,
 	}
-
-	//we have to know that the new element we're trying to set is valid
-	if !cv.CanSet(){
-		cv.SetFlag(FlagInvalidTarget)
-		return cv.AddError(NewError("cannot set values on target",
-			NewError("passed by value not reference")))
-	}
-
-	switch cv.change.Type {
-	case DELETE:
-		deleteOperation(cv)
-	case UPDATE, CREATE:
-		updateOperation(cv)
-	}
-	return cv
 }
 
-//renderTargetField this interrogates the path and returns the correct value to
-//change. Note that his is a recursion, t is not the same value as ret
-func renderTargetField(t *ChangeValue, field string) (ret *ChangeValue) {
-	ret = t
-	//substitute and solve for t (path)
-	switch t.val.Kind() {
-	case reflect.Struct:
-		for i := 0; i < t.val.NumField(); i++ {
-			f := t.val.Type().Field(i)
-			tname := tagName("diff", f)
-			if tname == "-" || hasTagOption("diff", f, "immutable") {
-				continue
-			}
-			if tname == field || f.Name == field{
-				ret = &ChangeValue{
-					val:    t.val.Field(i),
-					change: t.change,
-				}
-				ret.ClearFlags()
-				if hasTagOption("diff", f, "create") {
-					ret.SetFlag(OptionCreate)
-				}
-				if hasTagOption("diff", f, "omitunequal"){
-					ret.SetFlag(OptionOmitUnequal)
-				}
-			}
-		}
-	default:
-		ret = &ChangeValue{
-			val:    t.val,
-			change: t.change,
-		}
+//NewChangeValue idiomatic constructor (also invokes render)
+func NewChangeValue(c Change, target interface{}) (ret *ChangeValue) {
+	val := reflect.ValueOf(target)
+	ret = &ChangeValue{
+		target: &val,
+		change: &c,
 	}
-	if !ret.IsValid() {
-		ret.AddError(NewErrorf("Unable to access path value %v. Target field is invalid", field))
-	}
+	renderChangeTarget(ret)
 	return
 }
 
-//deleteOperation takes out some of the cyclomatic complexity from the patch fuction
-func deleteOperation(cv *ChangeValue) {
-	switch cv.Kind() {
-	case reflect.Slice:
-		var x reflect.Value
-		if cv.Len() > cv.index {
-			x = cv.Index(cv.index)
-		}
-		found := true
-		if !x.IsValid() || !reflect.DeepEqual(x.Interface(), cv.change.From) {
-			found = false
-			if !cv.HasFlag(OptionOmitUnequal){
-				cv.AddError(NewErrorf("value index %d is invalid", cv.index).
-					WithCause(NewError("scanning for value index")))
-				for i := 0; i < cv.Len(); i++ {
-					x = cv.Index(i)
-					if reflect.DeepEqual(x, cv.change.From) {
-						cv.AddError(NewErrorf("value changed index to %d", i))
-						found = true
-						cv.index = i
-					}
-				}
-			}
-		}
-		if x.IsValid() && found{
-			cv.val.Index(cv.index).Set(cv.val.Index(cv.Len() - 1))
-			cv.val.Set(cv.val.Slice(0, cv.Len() - 1))
-			cv.SetFlag(FlagDeleted)
-		}else{
-			cv.SetFlag(FlagIgnored)
-			cv.AddError(NewError("Unable to find matching slice index entry"))
-		}
+//renderChangeValue applies 'path' in change to target. nil check is foregone
+//                  here as we control usage
+func renderChangeTarget(c *ChangeValue) {
+
+	//This particular change element may potentially have the immutable flag
+	if c.HasFlag(OptionImmutable) {
+		c.AddError(NewError("Option immutable set, cannot apply change"))
+		return
+	} //the we always set a failure, and only unset if we successfully render the element
+	c.SetFlag(FlagInvalidTarget)
+
+	//substitute and solve for t (path)
+	switch c.target.Kind() {
+
+	//path element that is a map
 	case reflect.Map:
-		if !reflect.DeepEqual(cv.change.From, cv.Interface()) &&
-			cv.HasFlag(OptionOmitUnequal){
-			cv.SetFlag(FlagIgnored)
-			cv.AddError(NewError("target change doesn't match original"))
-			return
+		//map elements are 'copies' and immutable so if we set the new value to the
+		//map prior to editing the value, it will fail to stick. To fix this, we
+		//defer the safe until the stack unwinds
+		m, k, v := c.renderMap()
+		defer c.deleteMapEntry(m, k, v)
+
+	//path element that is a slice
+	case reflect.Slice:
+		c.renderSlice()
+
+	//walking a path means dealing with real elements
+	case reflect.Interface, reflect.Ptr:
+		el := c.target.Elem()
+		c.target = &el
+		c.ClearFlag(FlagInvalidTarget)
+
+	//path element that is a struct
+	case reflect.Struct:
+		c.patchStruct()
+	}
+
+	//if for some reason, rendering this element fails, c will no longer be valid
+	//we are best effort though, so we keep on trucking
+	if !c.IsValid() {
+		c.AddError(NewErrorf("Unable to access path position %d. Target field is invalid", c.pos))
+	}
+
+	//we've taken care of this path element, are there any more? if so, process
+	//else, let's take some action
+	if c.pos < len(c.change.Path) && !c.HasFlag(FlagInvalidTarget) {
+		renderChangeTarget(c)
+
+	} else { //we're at the end of the line... set the Value
+		switch c.change.Type {
+		case DELETE:
+			switch c.ParentKind() {
+			case reflect.Slice:
+				c.deleteSliceEntry()
+			case reflect.Struct:
+				c.deleteStructEntry()
+			default:
+				c.SetFlag(FlagIgnored)
+			}
+		case UPDATE, CREATE:
+			// this is generic because... we only deal in primitives here. AND
+			// the diff format To field already contains the correct type.
+			c.Set(reflect.ValueOf(c.change.To))
+			c.SetFlag(FlagUpdated)
 		}
-		if cv.IsNil() {
-			cv.SetFlag(FlagIgnored)
-			cv.AddError(NewError("target has nil map nothing to delete"))
-			return
-		}else{
-			cv.SetFlag(FlagDeleted)
-			cv.SetMapValue(cv.key, reflect.Value{})
-		}
-	default:
-		cv.Set(reflect.Zero(cv.Type()))
-		cv.SetFlag(FlagDeleted)
 	}
 }
-
-//updateOperation takes out some of the cyclomatic complexity from the patch fuction
-func updateOperation(cv *ChangeValue) {
-	switch cv.Kind() {
-	case reflect.Slice:
-		var x reflect.Value
-		if cv.Len() > cv.index {
-			x = cv.Index(cv.index)
-		}
-		found := true
-		if !x.IsValid() || !reflect.DeepEqual(x.Interface(), cv.change.From) {
-			found = false
-			if !cv.HasFlag(OptionOmitUnequal){
-				cv.AddError(NewErrorf("value index %d is invalid", cv.index).
-						    WithCause(NewError("scanning for value index")))
-				for i := 0; i < cv.Len(); i++ {
-					x = cv.Index(i)
-					if reflect.DeepEqual(x, cv.change.From) {
-						cv.AddError(NewErrorf("value changed index to %d", i))
-						found = true
-					}
-				}
-			}
-		}
-		if x.IsValid() && found{
-			x.Set(reflect.ValueOf(cv.change.To))
-			cv.SetFlag(FlagUpdated)
-		}else if cv.HasFlag(OptionCreate) && cv.change.Type == CREATE {
-			cv.Set(reflect.Append(cv.val, reflect.ValueOf(cv.change.To)))
-			cv.SetFlag(FlagCreated)
-		}else{
-			cv.AddError(NewError("Unable to find matching slice index entry"))
-			cv.SetFlag(FlagIgnored)
-		}
-	case reflect.Map:
-		if !reflect.DeepEqual(cv.change.From, cv.Interface()) &&
-			cv.HasFlag(OptionOmitUnequal){
-			cv.SetFlag(FlagIgnored)
-			cv.AddError(NewError("target change doesn't match original"))
-			return
-		}
-		if cv.IsNil() {
-			if cv.HasFlag(OptionCreate) {
-				nm := reflect.MakeMap(cv.Type())
-				nm.SetMapIndex(cv.key, reflect.ValueOf(cv.change.To))
-				cv.Set(nm)
-				cv.SetFlag(FlagCreated)
-			}else{
-				cv.SetFlag(FlagIgnored)
-				cv.AddError(NewError("target has nil map and create not set"))
-				return
-			}
-		}else{
-			cv.SetFlag(FlagUpdated)
-			cv.SetMapValue(cv.key, reflect.ValueOf(cv.change.To))
-		}
-	default:
-		if !reflect.DeepEqual(cv.change.From, cv.Interface()) &&
-			cv.HasFlag(OptionOmitUnequal){
-			cv.SetFlag(FlagIgnored)
-			cv.AddError(NewError("target change doesn't match original"))
-			return
-		}
-		cv.Set(reflect.ValueOf(cv.change.To))
-		cv.SetFlag(FlagUpdated)
-	}
-}
-

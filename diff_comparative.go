@@ -8,9 +8,13 @@ import (
 	"reflect"
 )
 
-func (d *Differ) diffComparative(path []string, c *ComparativeList) error {
+func (d *Differ) diffComparative(path []string, c *ComparativeList, parent interface{}) error {
 	for _, k := range c.keys {
-		fpath := copyAppend(path, idstring(k))
+		id := idstring(k)
+		if d.StructMapKeys {
+			id = idComplex(k)
+		}
+		fpath := copyAppend(path, id)
 
 		nv := reflect.ValueOf(nil)
 
@@ -22,7 +26,7 @@ func (d *Differ) diffComparative(path []string, c *ComparativeList) error {
 			c.m[k].B = &nv
 		}
 
-		err := d.diff(fpath, *c.m[k].A, *c.m[k].B)
+		err := d.diff(fpath, *c.m[k].A, *c.m[k].B, parent)
 		if err != nil {
 			return err
 		}
