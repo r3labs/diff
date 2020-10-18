@@ -6,7 +6,7 @@ package diff
 
 import "reflect"
 
-func (d *Differ) diffBool(path []string, a, b reflect.Value) error {
+func (d *Differ) diffBool(path []string, a, b reflect.Value, parent interface{}) error {
 	if a.Kind() == reflect.Invalid {
 		d.cl.Add(CREATE, path, nil, b.Interface())
 		return nil
@@ -22,7 +22,7 @@ func (d *Differ) diffBool(path []string, a, b reflect.Value) error {
 	}
 
 	if a.Bool() != b.Bool() {
-		d.cl.Add(UPDATE, path, a.Interface(), b.Interface())
+		d.cl.Add(UPDATE, path, a.Interface(), b.Interface(), parent)
 	}
 
 	return nil

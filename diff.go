@@ -7,6 +7,7 @@ package diff
 import (
 	"errors"
 	"fmt"
+	"github.com/vmihailenco/msgpack"
 	"reflect"
 	"strconv"
 	"strings"
@@ -29,6 +30,8 @@ type Differ struct {
 	customValueDiffers  []ValueDiffer
 	cl                  Changelog
 	AllowTypeMismatch   bool
+	DiscardParent       bool
+	StructMapKeys       bool
 	Filter              FilterFunc
 }
 
@@ -37,17 +40,18 @@ type Changelog []Change
 
 // Change stores information about a changed item
 type Change struct {
-	Type string      `json:"type"`
-	Path []string    `json:"path"`
-	From interface{} `json:"from"`
-	To   interface{} `json:"to"`
+	Type   string      `json:"type"`
+	Path   []string    `json:"path"`
+	From   interface{} `json:"from"`
+	To     interface{} `json:"to"`
+	parent interface{} `json:"parent"`
 }
 
 // ValueDiffer is an interface for custom differs
 type ValueDiffer interface {
 	Match(a, b reflect.Value) bool
 	Diff(cl *Changelog, path []string, a, b reflect.Value) error
-	InsertParentDiffer(dfunc func(path []string, a, b reflect.Value) error)
+	InsertParentDiffer(dfunc func(path []string, a, b reflect.Value, p interface{}) error)
 }
 
 // Changed returns true if both values differ
@@ -57,18 +61,19 @@ func Changed(a, b interface{}) bool {
 }
 
 // Diff returns a changelog of all mutated values from both
-func Diff(a, b interface{}) (Changelog, error) {
-	d := Differ{
-		TagName: "diff",
+func Diff(a, b interface{}, opts ...func(d *Differ) error) (Changelog, error) {
+	d, err := NewDiffer(opts...)
+	if err != nil {
+		return nil, err
 	}
-
-	return d.cl, d.diff([]string{}, reflect.ValueOf(a), reflect.ValueOf(b))
+	return d.Diff(a, b)
 }
 
 // NewDiffer creates a new configurable diffing object
 func NewDiffer(opts ...func(d *Differ) error) (*Differ, error) {
 	d := Differ{
-		TagName: "diff",
+		TagName:       "diff",
+		DiscardParent: false,
 	}
 
 	for _, opt := range opts {
@@ -91,7 +96,8 @@ type FilterFunc func(path []string, parent reflect.Type, field reflect.StructFie
 // depending on the change type specified
 func StructValues(t string, path []string, s interface{}) (Changelog, error) {
 	d := Differ{
-		TagName: "diff",
+		TagName:       "diff",
+		DiscardParent: false,
 	}
 
 	v := reflect.ValueOf(s)
@@ -117,10 +123,18 @@ func (d *Differ) Diff(a, b interface{}) (Changelog, error) {
 	// reset the state of the diff
 	d.cl = Changelog{}
 
-	return d.cl, d.diff([]string{}, reflect.ValueOf(a), reflect.ValueOf(b))
+	return d.cl, d.diff([]string{}, reflect.ValueOf(a), reflect.ValueOf(b), nil)
 }
 
-func (d *Differ) diff(path []string, a, b reflect.Value) error {
+func (d *Differ) diff(path []string, a, b reflect.Value, parent interface{}) error {
+
+	//look and see if we need to discard the parent
+	if parent != nil {
+		if d.DiscardParent || reflect.TypeOf(parent).Kind() != reflect.Struct {
+			parent = nil
+		}
+	}
+
 	// check if types match or are
 	if invalid(a, b) {
 		if d.AllowTypeMismatch {
@@ -150,33 +164,37 @@ func (d *Differ) diff(path []string, a, b reflect.Value) error {
 	case are(a, b, reflect.Slice, reflect.Invalid):
 		return d.diffSlice(path, a, b)
 	case are(a, b, reflect.String, reflect.Invalid):
-		return d.diffString(path, a, b)
+		return d.diffString(path, a, b, parent)
 	case are(a, b, reflect.Bool, reflect.Invalid):
-		return d.diffBool(path, a, b)
+		return d.diffBool(path, a, b, parent)
 	case are(a, b, reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Invalid):
-		return d.diffInt(path, a, b)
+		return d.diffInt(path, a, b, parent)
 	case are(a, b, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Invalid):
-		return d.diffUint(path, a, b)
+		return d.diffUint(path, a, b, parent)
 	case are(a, b, reflect.Float32, reflect.Float64, reflect.Invalid):
-		return d.diffFloat(path, a, b)
+		return d.diffFloat(path, a, b, parent)
 	case are(a, b, reflect.Map, reflect.Invalid):
 		return d.diffMap(path, a, b)
 	case are(a, b, reflect.Ptr, reflect.Invalid):
-		return d.diffPtr(path, a, b)
+		return d.diffPtr(path, a, b, parent)
 	case are(a, b, reflect.Interface, reflect.Invalid):
-		return d.diffInterface(path, a, b)
+		return d.diffInterface(path, a, b, parent)
 	default:
 		return errors.New("unsupported type: " + a.Kind().String())
 	}
 }
 
-func (cl *Changelog) Add(t string, path []string, from, to interface{}) {
-	(*cl) = append((*cl), Change{
+func (cl *Changelog) Add(t string, path []string, ftco ...interface{}) {
+	change := Change{
 		Type: t,
 		Path: path,
-		From: from,
-		To:   to,
-	})
+		From: ftco[0],
+		To:   ftco[1],
+	}
+	if len(ftco) > 2 {
+		change.parent = ftco[2]
+	}
+	(*cl) = append((*cl), change)
 }
 
 func tagName(tag string, f reflect.StructField) string {
@@ -231,6 +249,21 @@ func swapChange(t string, c Change) Change {
 	return nc
 }
 
+func idComplex(v interface{}) string {
+	switch v.(type) {
+	case string:
+		return v.(string)
+	case int:
+		return strconv.Itoa(v.(int))
+	default:
+		b, err := msgpack.Marshal(v)
+		if err != nil {
+			panic(err)
+		}
+		return string(b)
+	}
+
+}
 func idstring(v interface{}) string {
 	switch v.(type) {
 	case string:

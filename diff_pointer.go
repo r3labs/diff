@@ -8,17 +8,17 @@ import (
 	"reflect"
 )
 
-func (d *Differ) diffPtr(path []string, a, b reflect.Value) error {
+func (d *Differ) diffPtr(path []string, a, b reflect.Value, parent interface{}) error {
 	if a.Kind() != b.Kind() {
 		if a.Kind() == reflect.Invalid {
 			if !b.IsNil() {
-				return d.diff(path, reflect.ValueOf(nil), reflect.Indirect(b))
+				return d.diff(path, reflect.ValueOf(nil), reflect.Indirect(b), parent)
 			}
 		}
 
 		if b.Kind() == reflect.Invalid {
 			if !a.IsNil() {
-				return d.diff(path, reflect.Indirect(a), reflect.ValueOf(nil))
+				return d.diff(path, reflect.Indirect(a), reflect.ValueOf(nil), parent)
 			}
 		}
 
@@ -30,14 +30,14 @@ func (d *Differ) diffPtr(path []string, a, b reflect.Value) error {
 	}
 
 	if a.IsNil() {
-		d.cl.Add(UPDATE, path, nil, b.Interface())
+		d.cl.Add(UPDATE, path, nil, b.Interface(), parent)
 		return nil
 	}
 
 	if b.IsNil() {
-		d.cl.Add(UPDATE, path, a.Interface(), nil)
+		d.cl.Add(UPDATE, path, a.Interface(), nil, parent)
 		return nil
 	}
 
-	return d.diff(path, reflect.Indirect(a), reflect.Indirect(b))
+	return d.diff(path, reflect.Indirect(a), reflect.Indirect(b), parent)
 }

@@ -73,7 +73,9 @@ In order for struct fields to be compared, they must be tagged with a given name
 |--------------|------------------------------------|
 | `-`          | Excludes a value from being diffed |
 | `identifier` | If you need to compare arrays by a matching identifier and not based on order, you can specify the `identifier` tag. If an identifiable element is found in both the from and to structures, they will be directly compared. i.e. `diff:"name, identifier"` |
-| `immutable` | Will omit this struct field from diffing. When using `diff.StructValues()` these values will be added to the returned changelog. It's usecase is for when we have nothing to compare a struct to and want to show all of its relevant values. |
+| `immutable` | Will omit this struct field from diffing. When using `diff.StructValues()` these values will be added to the returned changelog. It's use case is for when we have nothing to compare a struct to and want to show all of its relevant values. |
+| `nocreate` | The default patch action is to allocate instances in the target strut, map or slice should they not exist. Adding this flag will tell patch to skip elements that it would otherwise need to allocate. This is separate from immutable, which is also honored while patching. |
+| `omitunequal` | Patching is a 'best effort' operation, and will by default attempt to update the 'correct' member of the target even if the underlying value has already changed to something other than the value in the change log 'from'. This tag will selectively ignore values that are not a 100% match. |
 
 ## Usage
 
@@ -121,7 +123,32 @@ When marshalling the changelog to json, the output will look like:
 
 ### Options and Configuration
 
-You can create a new instance of a differ that allows options to be set.
+Options can be set on the differ at call time which effect how diff acts when building the change log.
+```go
+import "github.com/r3labs/diff"
+
+type Order struct {
+    ID    string `diff:"id"`
+    Items []int  `diff:"items"`
+}
+
+func main() {
+    a := Order{
+        ID: "1234",
+        Items: []int{1, 2, 3, 4},
+    }
+
+    b := Order{
+        ID: "1234",
+        Items: []int{1, 2, 4},
+    }
+
+    changelog, err := diff.Diff(a, b, diff.DisableStructValues(), diff.AllowTypeMismatch(true))
+    ...
+}
+```
+
+You can also create a new instance of a differ that allows options to be set.
 
 ```go
 import "github.com/r3labs/diff"
@@ -156,6 +183,88 @@ Supported options are:
 
 `SliceOrdering` ensures that the ordering of items in a slice is taken into account
 
+`DiscardComplexOrigin` is a directive to diff to omit additional origin information about structs. This alters the behavior of patch and can lead to some pitfalls and non-intuitive behavior if used. On the other hand, it can significantly reduce the memory footprint of large complex diffs.
+
+`AllowTypeMismatch` is a global directive to either allow (true) or not to allow (false) patch apply the changes if 'from' is not equal. This is effectively a global version of the omitunequal tag.
+
+`Filter` provides a callback that allows you to determine which fields the differ descends into
+
+`DisableStructValues` disables populating a separate change for each item in a struct, where the struct is being compared to a nil Value.
+
+`TagName` sets the tag name to use when getting field names and options.
+
+### Patch and merge support
+Diff additionally supports merge and patch. Similar in concept to text patching / merging the Patch function, given 
+a change log and a target instance will make a _best effort_ to apply the changes in the change log to the variable
+pointed to. The intention is that the target pointer is of the same type however, that doesn't necessarily have to be 
+true. For example, two slices of differing structs may be similar enough to apply changes to in a polymorphic way, and 
+patch will certainly try.
+
+The patch function doesn't actually fail, and even if there are errors, it may succeed sufficiently for the task at hand.
+To accommodate this patch keeps track of each change log option it attempts to apply and reports the details of what 
+happened for further scrutiny.
+
+```go
+import "github.com/r3labs/diff"
+
+type Order struct {
+    ID    string `diff:"id"`
+    Items []int  `diff:"items"`
+}
+
+func main() {
+    a := Order{
+        ID: "1234",
+        Items: []int{1, 2, 3, 4},
+    }
+
+    b := Order{
+        ID: "1234",
+        Items: []int{1, 2, 4},
+    }
+
+    c := Order{}
+    changelog, err := diff.Diff(a, b)
+
+    patchlog := diff.Patch(changelog, &c)
+    //Note the lack of an error. Patch is best effort and uses flags to indicate actions taken
+    //and keeps any errors encountered along the way for review
+    fmt.Printf("Encountered %d errors while patching", patchlog.ErrorCount())
+    ...
+}
+```
+
+As a convenience, there is a Merge function that allows one to take three interfaces and perform all the tasks at the same
+time.
+
+```go
+import "github.com/r3labs/diff"
+
+type Order struct {
+    ID    string `diff:"id"`
+    Items []int  `diff:"items"`
+}
+
+func main() {
+    a := Order{
+        ID: "1234",
+        Items: []int{1, 2, 3, 4},
+    }
+
+    b := Order{
+        ID: "1234",
+        Items: []int{1, 2, 4},
+    }
+
+    c := Order{}
+    patchlog, err := diff.Merge(a, b, &c)
+    if err != nil {
+        fmt.Printf("Error encountered while diffing a & b")
+    }
+    fmt.Printf("Encountered %d errors while patching", patchlog.ErrorCount())
+    ...
+}
+```
 ## Running Tests
 
 ```

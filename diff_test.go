@@ -64,6 +64,13 @@ func TestDiff(t *testing.T) {
 		Error     error
 	}{
 		{
+			"uint-slice-insert", []uint{1, 2, 3}, []uint{1, 2, 3, 4},
+			Changelog{
+				Change{Type: CREATE, Path: []string{"3"}, To: uint(4)},
+			},
+			nil,
+		},
+		{
 			"int-slice-insert", []int{1, 2, 3}, []int{1, 2, 3, 4},
 			Changelog{
 				Change{Type: CREATE, Path: []string{"3"}, To: 4},
@@ -71,9 +78,24 @@ func TestDiff(t *testing.T) {
 			nil,
 		},
 		{
+			"uint-slice-delete", []uint{1, 2, 3}, []uint{1, 3},
+			Changelog{
+				Change{Type: DELETE, Path: []string{"1"}, From: uint(2)},
+			},
+			nil,
+		},
+		{
 			"int-slice-delete", []int{1, 2, 3}, []int{1, 3},
 			Changelog{
 				Change{Type: DELETE, Path: []string{"1"}, From: 2},
+			},
+			nil,
+		},
+		{
+			"uint-slice-insert-delete", []uint{1, 2, 3}, []uint{1, 3, 4},
+			Changelog{
+				Change{Type: DELETE, Path: []string{"1"}, From: uint(2)},
+				Change{Type: CREATE, Path: []string{"2"}, To: uint(4)},
 			},
 			nil,
 		},
@@ -161,14 +183,14 @@ func TestDiff(t *testing.T) {
 		{
 			"map-nil", map[string]string{"one": "test"}, nil,
 			Changelog{
-				Change{Type: DELETE, Path: []string{"one"}, From: "test", To: nil},
+				Change{Type: DELETE, Path: []string{"\xa3one"}, From: "test", To: nil},
 			},
 			nil,
 		},
 		{
 			"nil-map", nil, map[string]string{"one": "test"},
 			Changelog{
-				Change{Type: CREATE, Path: []string{"one"}, From: nil, To: "test"},
+				Change{Type: CREATE, Path: []string{"\xa3one"}, From: nil, To: "test"},
 			},
 			nil,
 		},
@@ -339,8 +361,8 @@ func TestDiff(t *testing.T) {
 			"mixed-slice-map", []map[string]interface{}{{"name": "name1", "type": []string{"null", "string"}}}, []map[string]interface{}{{"name": "name1", "type": []string{"null", "int"}}, {"name": "name2", "type": []string{"null", "string"}}},
 			Changelog{
 				Change{Type: UPDATE, Path: []string{"0", "type", "1"}, From: "string", To: "int"},
-				Change{Type: CREATE, Path: []string{"1", "name"}, From: nil, To: "name2"},
-				Change{Type: CREATE, Path: []string{"1", "type"}, From: nil, To: []string{"null", "string"}},
+				Change{Type: CREATE, Path: []string{"1", "\xa4name"}, From: nil, To: "name2"},
+				Change{Type: CREATE, Path: []string{"1", "\xa4type"}, From: nil, To: []string{"null", "string"}},
 			},
 			nil,
 		},
@@ -377,7 +399,13 @@ func TestDiff(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
-			cl, err := Diff(tc.A, tc.B)
+
+			var options []func(d *Differ) error
+			switch tc.Name {
+			case "mixed-slice-map", "nil-map", "map-nil":
+				options = append(options, StructMapKeySupport())
+			}
+			cl, err := Diff(tc.A, tc.B, options...)
 
 			assert.Equal(t, tc.Error, err)
 			require.Equal(t, len(tc.Changelog), len(cl))
@@ -617,10 +645,10 @@ func TestDiffPrivateField(t *testing.T) {
 
 type testType string
 type testTypeDiffer struct {
-	DiffFunc (func(path []string, a, b reflect.Value) error)
+	DiffFunc (func(path []string, a, b reflect.Value, p interface{}) error)
 }
 
-func (o *testTypeDiffer) InsertParentDiffer(dfunc func(path []string, a, b reflect.Value) error) {
+func (o *testTypeDiffer) InsertParentDiffer(dfunc func(path []string, a, b reflect.Value, p interface{}) error) {
 	o.DiffFunc = dfunc
 }
 
@@ -670,10 +698,10 @@ type RecursiveTestStruct struct {
 }
 
 type recursiveTestStructDiffer struct {
-	DiffFunc (func(path []string, a, b reflect.Value) error)
+	DiffFunc (func(path []string, a, b reflect.Value, p interface{}) error)
 }
 
-func (o *recursiveTestStructDiffer) InsertParentDiffer(dfunc func(path []string, a, b reflect.Value) error) {
+func (o *recursiveTestStructDiffer) InsertParentDiffer(dfunc func(path []string, a, b reflect.Value, p interface{}) error) {
 	o.DiffFunc = dfunc
 }
 
@@ -705,7 +733,7 @@ func (o *recursiveTestStructDiffer) Diff(cl *Changelog, path []string, a, b refl
 		af := a.Field(i)
 		bf := b.FieldByName(field.Name)
 		fpath := copyAppend(path, tname)
-		err := o.DiffFunc(fpath, af, bf)
+		err := o.DiffFunc(fpath, af, bf, nil)
 		if err != nil {
 			return err
 		}
@@ -739,13 +767,12 @@ func TestRecursiveCustomDiffer(t *testing.T) {
 	assert.Len(t, cl, 1)
 }
 
-
 func TestHandleDifferentTypes(t *testing.T) {
 	cases := []struct {
-		Name      string
-		A, B      interface{}
-		Changelog Changelog
-		Error     error
+		Name               string
+		A, B               interface{}
+		Changelog          Changelog
+		Error              error
 		HandleTypeMismatch bool
 	}{
 		{
@@ -761,7 +788,7 @@ func TestHandleDifferentTypes(t *testing.T) {
 				p1 string
 				p2 int
 			}{"1", 1},
-			struct{
+			struct {
 				p1 string
 				p2 string
 			}{"1", "1"},
@@ -785,7 +812,7 @@ func TestHandleDifferentTypes(t *testing.T) {
 				P2 int
 				P3 map[string]string
 			}{"1", 1, map[string]string{"1": "1"}},
-			struct{
+			struct {
 				P1 string
 				P2 string
 				P3 string
