@@ -15,8 +15,7 @@ func (c *ChangeValue) patchStruct() {
 	for i := 0; i < c.target.NumField(); i++ {
 		f := c.target.Type().Field(i)
 		tname := tagName("diff", f)
-		if tname == "-" || hasTagOption("diff", f, "immutable") {
-			c.SetFlag(OptionImmutable)
+		if tname == "-" {
 			continue
 		}
 		if tname == field || f.Name == field {
@@ -26,6 +25,9 @@ func (c *ChangeValue) patchStruct() {
 			}
 			if hasTagOption("diff", f, "omitunequal") {
 				c.SetFlag(OptionOmitUnequal)
+			}
+			if hasTagOption("diff", f, "immutable") {
+				c.SetFlag(OptionImmutable)
 			}
 			c.swap(&x)
 			break
