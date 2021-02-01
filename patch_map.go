@@ -1,12 +1,13 @@
 package diff
 
 import (
-	"github.com/vmihailenco/msgpack"
 	"reflect"
+
+	"github.com/vmihailenco/msgpack"
 )
 
 //renderMap - handle map rendering for patch
-func (c *ChangeValue) renderMap() (m, k, v *reflect.Value) {
+func (d *Differ) renderMap(c *ChangeValue) (m, k, v *reflect.Value) {
 
 	//we must tease out the type of the key, we use the msgpack from diff to recreate the key
 	kt := c.target.Type().Key()
@@ -47,7 +48,7 @@ func (c *ChangeValue) renderMap() (m, k, v *reflect.Value) {
 //deleteMapEntry - deletes are special, they are handled differently based on options
 //            container type etc. We have to have special handling for each
 //            type. Set values are more generic even if they must be instanced
-func (c *ChangeValue) deleteMapEntry(m, k, v *reflect.Value) {
+func (d *Differ) deleteMapEntry(c *ChangeValue, m, k, v *reflect.Value) {
 	if m != nil && m.CanSet() && v.IsValid() {
 		for x := 0; x < v.NumField(); x++ {
 			if !v.Field(x).IsZero() {
