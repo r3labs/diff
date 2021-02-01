@@ -7,10 +7,11 @@ package diff
 import (
 	"errors"
 	"fmt"
-	"github.com/vmihailenco/msgpack"
 	"reflect"
 	"strconv"
 	"strings"
+
+	"github.com/vmihailenco/msgpack"
 )
 
 const (
@@ -24,15 +25,16 @@ const (
 
 // Differ a configurable diff instance
 type Differ struct {
-	TagName             string
-	SliceOrdering       bool
-	DisableStructValues bool
-	customValueDiffers  []ValueDiffer
-	cl                  Changelog
-	AllowTypeMismatch   bool
-	DiscardParent       bool
-	StructMapKeys       bool
-	Filter              FilterFunc
+	TagName                string
+	SliceOrdering          bool
+	DisableStructValues    bool
+	customValueDiffers     []ValueDiffer
+	cl                     Changelog
+	AllowTypeMismatch      bool
+	DiscardParent          bool
+	StructMapKeys          bool
+	FlattenEmbeddedStructs bool
+	Filter                 FilterFunc
 }
 
 // Changelog stores a list of changed items

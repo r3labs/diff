@@ -36,6 +36,16 @@ type tmstruct struct {
 	Bar int    `diff:"bar"`
 }
 
+type Tmstruct struct {
+	Foo string `diff:"foo"`
+	Bar int    `diff:"bar"`
+}
+
+type embedstruct struct {
+	Tmstruct
+	Baz bool `diff:"baz"`
+}
+
 type tstruct struct {
 	ID              string            `diff:"id,immutable"`
 	Name            string            `diff:"name"`
@@ -392,6 +402,17 @@ func TestDiff(t *testing.T) {
 			tstruct{private: 4},
 			Changelog{
 				Change{Type: UPDATE, Path: []string{"private"}, From: int64(1), To: int64(4)},
+			},
+			nil,
+		},
+		{
+			"embedded-struct-field",
+			embedstruct{Tmstruct{Foo: "a", Bar: 2}, true},
+			embedstruct{Tmstruct{Foo: "b", Bar: 3}, false},
+			Changelog{
+				Change{Type: UPDATE, Path: []string{"foo"}, From: "a", To: "b"},
+				Change{Type: UPDATE, Path: []string{"bar"}, From: 2, To: 3},
+				Change{Type: UPDATE, Path: []string{"baz"}, From: true, To: false},
 			},
 			nil,
 		},

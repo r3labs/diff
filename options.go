@@ -1,5 +1,13 @@
 package diff
 
+// FlattenEmbeddedStructs determines whether fields of embedded structs should behave as if they are directly under the parent
+func FlattenEmbeddedStructs(enabled bool) func(d *Differ) error {
+	return func(d *Differ) error {
+		d.FlattenEmbeddedStructs = enabled
+		return nil
+	}
+}
+
 // SliceOrdering determines whether the ordering of items in a slice results in a change
 func SliceOrdering(enabled bool) func(d *Differ) error {
 	return func(d *Differ) error {
