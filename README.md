@@ -52,7 +52,7 @@ A diffable value can be/contain any of the following types:
 
 
 | Type         | Supported |
-|--------------|-----------|
+| ------------ | --------- |
 | struct       | ✔         |
 | slice        | ✔         |
 | string       | ✔         |
@@ -69,12 +69,12 @@ Please see the docs for more supported types, options and features.
 
 In order for struct fields to be compared, they must be tagged with a given name. All tag values are prefixed with `diff`. i.e. `diff:"items"`.
 
-| Tag          | Usage                              |
-|--------------|------------------------------------|
-| `-`          | Excludes a value from being diffed |
-| `identifier` | If you need to compare arrays by a matching identifier and not based on order, you can specify the `identifier` tag. If an identifiable element is found in both the from and to structures, they will be directly compared. i.e. `diff:"name, identifier"` |
-| `immutable` | Will omit this struct field from diffing. When using `diff.StructValues()` these values will be added to the returned changelog. It's use case is for when we have nothing to compare a struct to and want to show all of its relevant values. |
-| `nocreate` | The default patch action is to allocate instances in the target strut, map or slice should they not exist. Adding this flag will tell patch to skip elements that it would otherwise need to allocate. This is separate from immutable, which is also honored while patching. |
+| Tag           | Usage                                                                                                                                                                                                                                                                                           |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `-`           | Excludes a value from being diffed                                                                                                                                                                                                                                                              |
+| `identifier`  | If you need to compare arrays by a matching identifier and not based on order, you can specify the `identifier` tag. If an identifiable element is found in both the from and to structures, they will be directly compared. i.e. `diff:"name, identifier"`                                     |
+| `immutable`   | Will omit this struct field from diffing. When using `diff.StructValues()` these values will be added to the returned changelog. It's use case is for when we have nothing to compare a struct to and want to show all of its relevant values.                                                  |
+| `nocreate`    | The default patch action is to allocate instances in the target strut, map or slice should they not exist. Adding this flag will tell patch to skip elements that it would otherwise need to allocate. This is separate from immutable, which is also honored while patching.                   |
 | `omitunequal` | Patching is a 'best effort' operation, and will by default attempt to update the 'correct' member of the target even if the underlying value has already changed to something other than the value in the change log 'from'. This tag will selectively ignore values that are not a 100% match. |
 
 ## Usage
@@ -84,7 +84,7 @@ In order for struct fields to be compared, they must be tagged with a given name
 Diffing a basic set of values can be accomplished using the diff functions. Any items that specify a "diff" tag using a name will be compared.
 
 ```go
-import "github.com/r3labs/diff"
+import "github.com/r3labs/diff/v2"
 
 type Order struct {
     ID    string `diff:"id"`
@@ -125,7 +125,7 @@ When marshalling the changelog to json, the output will look like:
 
 Options can be set on the differ at call time which effect how diff acts when building the change log.
 ```go
-import "github.com/r3labs/diff"
+import "github.com/r3labs/diff/v2"
 
 type Order struct {
     ID    string `diff:"id"`
@@ -151,7 +151,7 @@ func main() {
 You can also create a new instance of a differ that allows options to be set.
 
 ```go
-import "github.com/r3labs/diff"
+import "github.com/r3labs/diff/v2"
 
 type Order struct {
     ID    string `diff:"id"`
@@ -205,7 +205,7 @@ To accommodate this patch keeps track of each change log option it attempts to a
 happened for further scrutiny.
 
 ```go
-import "github.com/r3labs/diff"
+import "github.com/r3labs/diff/v2"
 
 type Order struct {
     ID    string `diff:"id"`
@@ -234,11 +234,44 @@ func main() {
 }
 ```
 
+Instances of differ with options set can also be used when patching.
+
+```go
+package main
+
+import "github.com/r3labs/diff/v2"
+
+type Order struct {
+	ID    string `json:"id"`
+	Items []int  `json:"items"`
+}
+
+func main() {
+	a := Order{
+		ID:    "1234",
+		Items: []int{1, 2, 3, 4},
+	}
+
+	b := Order{
+		ID:    "1234",
+		Items: []int{1, 2, 4},
+	}
+
+    d, _ := diff.NewDiffer(diff.TagName("json"))
+
+    changelog, _ := d.Diff(a, b)
+    
+	d.Patch(changelog, &a)
+	// reflect.DeepEqual(a, b) == true
+}
+
+```
+
 As a convenience, there is a Merge function that allows one to take three interfaces and perform all the tasks at the same
 time.
 
 ```go
-import "github.com/r3labs/diff"
+import "github.com/r3labs/diff/v2"
 
 type Order struct {
     ID    string `diff:"id"`
