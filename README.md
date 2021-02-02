@@ -247,22 +247,22 @@ type Order struct {
 }
 
 func main() {
-	a := Order{
-		ID:    "1234",
-		Items: []int{1, 2, 3, 4},
-	}
+    a := Order{
+        ID:    "1234",
+        Items: []int{1, 2, 3, 4},
+        }
 
-	b := Order{
-		ID:    "1234",
-		Items: []int{1, 2, 4},
-	}
+    b := Order{
+        ID:    "1234",
+        Items: []int{1, 2, 4},
+    }
 
     d, _ := diff.NewDiffer(diff.TagName("json"))
 
     changelog, _ := d.Diff(a, b)
 
-	d.Patch(changelog, &a)
-	// reflect.DeepEqual(a, b) == true
+    d.Patch(changelog, &a)
+    // reflect.DeepEqual(a, b) == true
 }
 
 ```
