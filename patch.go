@@ -107,20 +107,31 @@ func (p PatchLog) ErrorCount() (ret uint) {
 	return
 }
 
+func Merge(original interface{}, changed interface{}, target interface{}) (PatchLog, error) {
+	d, _ := NewDiffer()
+	return d.Merge(original, changed, target)
+}
+
 // Merge is a convenience function that diffs, the original and changed items
 // and merges said changes with target all in one call.
-func Merge(original interface{}, changed interface{}, target interface{}) (PatchLog, error) {
-	if cl, err := Diff(original, changed, StructMapKeySupport()); err == nil {
+func (d *Differ) Merge(original interface{}, changed interface{}, target interface{}) (PatchLog, error) {
+	StructMapKeySupport()(d)
+	if cl, err := d.Diff(original, changed); err == nil {
 		return Patch(cl, target), nil
 	} else {
 		return nil, err
 	}
 }
 
-//Patch... the missing feature.
 func Patch(cl Changelog, target interface{}) (ret PatchLog) {
+	d, _ := NewDiffer()
+	return d.Patch(cl, target)
+}
+
+//Patch... the missing feature.
+func (d *Differ) Patch(cl Changelog, target interface{}) (ret PatchLog) {
 	for _, c := range cl {
-		ret = append(ret, NewPatchLogEntry(NewChangeValue(c, target)))
+		ret = append(ret, NewPatchLogEntry(NewChangeValue(d, c, target)))
 	}
 	return ret
 }
@@ -138,19 +149,19 @@ func NewPatchLogEntry(cv *ChangeValue) PatchLogEntry {
 }
 
 //NewChangeValue idiomatic constructor (also invokes render)
-func NewChangeValue(c Change, target interface{}) (ret *ChangeValue) {
+func NewChangeValue(d *Differ, c Change, target interface{}) (ret *ChangeValue) {
 	val := reflect.ValueOf(target)
 	ret = &ChangeValue{
 		target: &val,
 		change: &c,
 	}
-	renderChangeTarget(ret)
+	d.renderChangeTarget(ret)
 	return
 }
 
 //renderChangeValue applies 'path' in change to target. nil check is foregone
 //                  here as we control usage
-func renderChangeTarget(c *ChangeValue) {
+func (d *Differ) renderChangeTarget(c *ChangeValue) {
 
 	//This particular change element may potentially have the immutable flag
 	if c.HasFlag(OptionImmutable) {
@@ -167,12 +178,12 @@ func renderChangeTarget(c *ChangeValue) {
 		//map elements are 'copies' and immutable so if we set the new value to the
 		//map prior to editing the value, it will fail to stick. To fix this, we
 		//defer the safe until the stack unwinds
-		m, k, v := c.renderMap()
-		defer c.deleteMapEntry(m, k, v)
+		m, k, v := d.renderMap(c)
+		defer d.deleteMapEntry(c, m, k, v)
 
 	//path element that is a slice
 	case reflect.Slice:
-		c.renderSlice()
+		d.renderSlice(c)
 
 	//walking a path means dealing with real elements
 	case reflect.Interface, reflect.Ptr:
@@ -182,7 +193,7 @@ func renderChangeTarget(c *ChangeValue) {
 
 	//path element that is a struct
 	case reflect.Struct:
-		c.patchStruct()
+		d.patchStruct(c)
 	}
 
 	//if for some reason, rendering this element fails, c will no longer be valid
@@ -194,16 +205,16 @@ func renderChangeTarget(c *ChangeValue) {
 	//we've taken care of this path element, are there any more? if so, process
 	//else, let's take some action
 	if c.pos < len(c.change.Path) && !c.HasFlag(FlagInvalidTarget) {
-		renderChangeTarget(c)
+		d.renderChangeTarget(c)
 
 	} else { //we're at the end of the line... set the Value
 		switch c.change.Type {
 		case DELETE:
 			switch c.ParentKind() {
 			case reflect.Slice:
-				c.deleteSliceEntry()
+				d.deleteSliceEntry(c)
 			case reflect.Struct:
-				c.deleteStructEntry()
+				d.deleteStructEntry(c)
 			default:
 				c.SetFlag(FlagIgnored)
 			}

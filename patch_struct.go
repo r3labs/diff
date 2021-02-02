@@ -8,25 +8,25 @@ import "reflect"
 */
 
 //patchStruct - handles the rendering of a struct field
-func (c *ChangeValue) patchStruct() {
+func (d *Differ) patchStruct(c *ChangeValue) {
 
 	field := c.change.Path[c.pos]
 
 	for i := 0; i < c.target.NumField(); i++ {
 		f := c.target.Type().Field(i)
-		tname := tagName("diff", f)
+		tname := tagName(d.TagName, f)
 		if tname == "-" {
 			continue
 		}
 		if tname == field || f.Name == field {
 			x := c.target.Field(i)
-			if hasTagOption("diff", f, "nocreate") {
+			if hasTagOption(d.TagName, f, "nocreate") {
 				c.SetFlag(OptionNoCreate)
 			}
-			if hasTagOption("diff", f, "omitunequal") {
+			if hasTagOption(d.TagName, f, "omitunequal") {
 				c.SetFlag(OptionOmitUnequal)
 			}
-			if hasTagOption("diff", f, "immutable") {
+			if hasTagOption(d.TagName, f, "immutable") {
 				c.SetFlag(OptionImmutable)
 			}
 			c.swap(&x)
@@ -36,7 +36,7 @@ func (c *ChangeValue) patchStruct() {
 }
 
 //track and zero out struct members
-func (c *ChangeValue) deleteStructEntry() {
+func (d *Differ) deleteStructEntry(c *ChangeValue) {
 
 	//deleting a struct value set's it to the 'basic' type
 	c.Set(reflect.Zero(c.target.Type()))
