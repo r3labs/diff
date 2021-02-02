@@ -169,10 +169,10 @@ func main() {
         Items: []int{1, 2, 4},
     }
 
-	d, err := diff.NewDiffer(diff.SliceOrdering(true))
-	if err != nil {
-		panic(err)
-	}
+    d, err := diff.NewDiffer(diff.SliceOrdering(true))
+    if err != nil {
+        panic(err)
+    }
 
     changelog, err := d.Diff(a, b)
     ...
@@ -260,7 +260,7 @@ func main() {
     d, _ := diff.NewDiffer(diff.TagName("json"))
 
     changelog, _ := d.Diff(a, b)
-    
+
 	d.Patch(changelog, &a)
 	// reflect.DeepEqual(a, b) == true
 }
