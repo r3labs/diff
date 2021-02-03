@@ -339,8 +339,8 @@ func TestPatch(t *testing.T) {
 		// },
 		{
 			"embedded-struct-field",
-			&embedstruct{Tmstruct{Foo: "a", Bar: 2}, true},
-			&embedstruct{Tmstruct{Foo: "b", Bar: 3}, false},
+			&embedstruct{Embedded{Foo: "a", Bar: 2}, true},
+			&embedstruct{Embedded{Foo: "b", Bar: 3}, false},
 			Changelog{
 				Change{Type: UPDATE, Path: []string{"foo"}, From: "a", To: "b"},
 				Change{Type: UPDATE, Path: []string{"bar"}, From: 2, To: 3},
