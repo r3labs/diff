@@ -36,13 +36,13 @@ type tmstruct struct {
 	Bar int    `diff:"bar"`
 }
 
-type Tmstruct struct {
+type Embedded struct {
 	Foo string `diff:"foo"`
 	Bar int    `diff:"bar"`
 }
 
 type embedstruct struct {
-	Tmstruct
+	Embedded
 	Baz bool `diff:"baz"`
 }
 
@@ -407,8 +407,8 @@ func TestDiff(t *testing.T) {
 		},
 		{
 			"embedded-struct-field",
-			embedstruct{Tmstruct{Foo: "a", Bar: 2}, true},
-			embedstruct{Tmstruct{Foo: "b", Bar: 3}, false},
+			embedstruct{Embedded{Foo: "a", Bar: 2}, true},
+			embedstruct{Embedded{Foo: "b", Bar: 3}, false},
 			Changelog{
 				Change{Type: UPDATE, Path: []string{"foo"}, From: "a", To: "b"},
 				Change{Type: UPDATE, Path: []string{"bar"}, From: 2, To: 3},
