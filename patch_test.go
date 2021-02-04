@@ -182,12 +182,14 @@ func TestPatch(t *testing.T) {
 			switch tc.Name {
 			case "mixed-slice-map", "nil-map", "map-nil":
 				options = append(options, StructMapKeySupport())
+			case "embedded-struct-field":
+				options = append(options, FlattenEmbeddedStructs(true))
 			}
 			d, err := NewDiffer(options...)
 			if err != nil {
 				panic(err)
 			}
-			pl := d.Patch(tc.Changelog, &tc.A)
+			pl := d.Patch(tc.Changelog, tc.A)
 
 			assert.Equal(t, tc.B, tc.A)
 			require.Equal(t, len(tc.Changelog), len(pl))
