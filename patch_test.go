@@ -173,6 +173,26 @@ func TestPatch(t *testing.T) {
 			},
 			nil,
 		},
+		{
+			"custom-tags",
+			&customTagStruct{Foo: "abc", Bar: 3},
+			&customTagStruct{Foo: "def", Bar: 4},
+			Changelog{
+				Change{Type: UPDATE, Path: []string{"foo"}, From: "abc", To: "def"},
+				Change{Type: UPDATE, Path: []string{"bar"}, From: 3, To: 4},
+			},
+			nil,
+		},
+		{
+			"custom-types",
+			&customTypeStruct{Foo: "a", Bar: 1},
+			&customTypeStruct{Foo: "b", Bar: 2},
+			Changelog{
+				Change{Type: UPDATE, Path: []string{"foo"}, From: CustomStringType("a"), To: CustomStringType("b")},
+				Change{Type: UPDATE, Path: []string{"bar"}, From: CustomIntType(1), To: CustomIntType(2)},
+			},
+			nil,
+		},
 	}
 
 	for _, tc := range cases {
@@ -183,7 +203,9 @@ func TestPatch(t *testing.T) {
 			case "mixed-slice-map", "nil-map", "map-nil":
 				options = append(options, StructMapKeySupport())
 			case "embedded-struct-field":
-				options = append(options, FlattenEmbeddedStructs(true))
+				options = append(options, FlattenEmbeddedStructs())
+			case "custom-tags":
+				options = append(options, TagName("json"))
 			}
 			d, err := NewDiffer(options...)
 			if err != nil {
@@ -195,4 +217,32 @@ func TestPatch(t *testing.T) {
 			require.Equal(t, len(tc.Changelog), len(pl))
 		})
 	}
+
+	t.Run("convert-types", func(t *testing.T) {
+		a := &tmstruct{Foo: "a", Bar: 1}
+		b := &customTypeStruct{Foo: "b", Bar: 2}
+		cl := Changelog{
+			Change{Type: UPDATE, Path: []string{"foo"}, From: CustomStringType("a"), To: CustomStringType("b")},
+			Change{Type: UPDATE, Path: []string{"bar"}, From: CustomIntType(1), To: CustomIntType(2)},
+		}
+
+		d, err := NewDiffer()
+		if err != nil {
+			panic(err)
+		}
+		pl := d.Patch(cl, a)
+
+		assert.True(t, pl.HasErrors())
+
+		d, err = NewDiffer(ConvertCompatibleTypes())
+		if err != nil {
+			panic(err)
+		}
+		pl = d.Patch(cl, a)
+
+		assert.False(t, pl.HasErrors())
+		assert.Equal(t, string(b.Foo), a.Foo)
+		assert.Equal(t, int(b.Bar), a.Bar)
+		require.Equal(t, len(cl), len(pl))
+	})
 }
