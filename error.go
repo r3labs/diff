@@ -68,7 +68,7 @@ func NewError(message string, causes ...error) *DiffError {
 		message: message,
 	}
 	for _, cause := range causes {
-		s.WithCause(cause)
+		s.WithCause(cause) // nolint: errcheck
 	}
 	return s
 }
