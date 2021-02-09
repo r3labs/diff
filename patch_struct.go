@@ -62,5 +62,5 @@ func (d *Differ) patchStruct(c *ChangeValue) {
 func (d *Differ) deleteStructEntry(c *ChangeValue) {
 
 	//deleting a struct value set's it to the 'basic' type
-	c.Set(reflect.Zero(c.target.Type()))
+	c.Set(reflect.Zero(c.target.Type()), d.ConvertCompatibleTypes)
 }

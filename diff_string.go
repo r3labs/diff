@@ -22,7 +22,12 @@ func (d *Differ) diffString(path []string, a, b reflect.Value, parent interface{
 	}
 
 	if a.String() != b.String() {
-		d.cl.Add(UPDATE, path, a.String(), b.String(), parent)
+		if a.CanInterface() {
+			// If a and/or b is of a type that is an alias for String, store that type in changelog
+			d.cl.Add(UPDATE, path, a.Interface(), b.Interface(), parent)
+		} else {
+			d.cl.Add(UPDATE, path, a.String(), b.String(), parent)
+		}
 	}
 
 	return nil

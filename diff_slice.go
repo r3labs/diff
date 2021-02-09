@@ -90,7 +90,7 @@ type sliceTracker []bool
 
 func (st *sliceTracker) has(s, v reflect.Value) bool {
 	if len(*st) != s.Len() {
-		(*st) = make([]bool, s.Len(), s.Len())
+		(*st) = make([]bool, s.Len())
 	}
 
 	for i := 0; i < s.Len(); i++ {

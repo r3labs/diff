@@ -34,6 +34,7 @@ type Differ struct {
 	DiscardParent          bool
 	StructMapKeys          bool
 	FlattenEmbeddedStructs bool
+	ConvertCompatibleTypes bool
 	Filter                 FilterFunc
 }
 
@@ -252,11 +253,11 @@ func swapChange(t string, c Change) Change {
 }
 
 func idComplex(v interface{}) string {
-	switch v.(type) {
+	switch v := v.(type) {
 	case string:
-		return v.(string)
+		return v
 	case int:
-		return strconv.Itoa(v.(int))
+		return strconv.Itoa(v)
 	default:
 		b, err := msgpack.Marshal(v)
 		if err != nil {
@@ -267,11 +268,11 @@ func idComplex(v interface{}) string {
 
 }
 func idstring(v interface{}) string {
-	switch v.(type) {
+	switch v := v.(type) {
 	case string:
-		return v.(string)
+		return v
 	case int:
-		return strconv.Itoa(v.(int))
+		return strconv.Itoa(v)
 	default:
 		return fmt.Sprint(v)
 	}

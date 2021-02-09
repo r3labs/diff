@@ -1,6 +1,7 @@
 package diff
 
 import (
+	"fmt"
 	"reflect"
 )
 
@@ -73,14 +74,24 @@ func (c ChangeValue) ParentLen() (ret int) {
 }
 
 //ParentSet - nil safe parent set
-func (c *ChangeValue) ParentSet(value reflect.Value) {
+func (c *ChangeValue) ParentSet(value reflect.Value, convertCompatibleTypes bool) {
 	if c != nil && c.parent != nil {
 		defer func() {
 			if r := recover(); r != nil {
 				c.SetFlag(FlagParentSetFailed)
 			}
 		}()
-		c.parent.Set(value)
+
+		if convertCompatibleTypes {
+			if !value.Type().ConvertibleTo(c.parent.Type()) {
+				c.AddError(fmt.Errorf("Value of type %s is not convertible to %s", value.Type().String(), c.parent.Type().String()))
+				c.SetFlag(FlagParentSetFailed)
+				return
+			}
+			c.parent.Set(value.Convert(c.parent.Type()))
+		} else {
+			c.parent.Set(value)
+		}
 		c.SetFlag(FlagParentSetApplied)
 	}
 }
@@ -91,7 +102,7 @@ func (c ChangeValue) Len() int {
 }
 
 //Set echos reflect set
-func (c *ChangeValue) Set(value reflect.Value) {
+func (c *ChangeValue) Set(value reflect.Value, convertCompatibleTypes bool) {
 	if c != nil {
 		defer func() {
 			if r := recover(); r != nil {
@@ -103,7 +114,17 @@ func (c *ChangeValue) Set(value reflect.Value) {
 			c.SetFlag(FlagIgnored)
 			return
 		}
-		c.target.Set(value)
+
+		if convertCompatibleTypes {
+			if !value.Type().ConvertibleTo(c.target.Type()) {
+				c.AddError(fmt.Errorf("Value of type %s is not convertible to %s", value.Type().String(), c.target.Type().String()))
+				c.SetFlag(FlagFailed)
+				return
+			}
+			c.target.Set(value.Convert(c.target.Type()))
+		} else {
+			c.target.Set(value)
+		}
 		c.SetFlag(FlagApplied)
 	}
 }

@@ -46,6 +46,18 @@ type embedstruct struct {
 	Baz bool `diff:"baz"`
 }
 
+type customTagStruct struct {
+	Foo string `json:"foo"`
+	Bar int    `json:"bar"`
+}
+
+type CustomStringType string
+type CustomIntType int
+type customTypeStruct struct {
+	Foo CustomStringType `diff:"foo"`
+	Bar CustomIntType    `diff:"bar"`
+}
+
 type tstruct struct {
 	ID              string            `diff:"id,immutable"`
 	Name            string            `diff:"name"`
@@ -233,21 +245,21 @@ func TestDiff(t *testing.T) {
 			nil,
 		},
 		{
-			"nested-slice-insert", map[string][]int{"a": []int{1, 2, 3}}, map[string][]int{"a": []int{1, 2, 3, 4}},
+			"nested-slice-insert", map[string][]int{"a": {1, 2, 3}}, map[string][]int{"a": {1, 2, 3, 4}},
 			Changelog{
 				Change{Type: CREATE, Path: []string{"a", "3"}, To: 4},
 			},
 			nil,
 		},
 		{
-			"nested-slice-update", map[string][]int{"a": []int{1, 2, 3}}, map[string][]int{"a": []int{1, 4, 3}},
+			"nested-slice-update", map[string][]int{"a": {1, 2, 3}}, map[string][]int{"a": {1, 4, 3}},
 			Changelog{
 				Change{Type: UPDATE, Path: []string{"a", "1"}, From: 2, To: 4},
 			},
 			nil,
 		},
 		{
-			"nested-slice-delete", map[string][]int{"a": []int{1, 2, 3}}, map[string][]int{"a": []int{1, 3}},
+			"nested-slice-delete", map[string][]int{"a": {1, 2, 3}}, map[string][]int{"a": {1, 3}},
 			Changelog{
 				Change{Type: DELETE, Path: []string{"a", "1"}, From: 2, To: nil},
 			},
@@ -416,6 +428,26 @@ func TestDiff(t *testing.T) {
 			},
 			nil,
 		},
+		{
+			"custom-tags",
+			customTagStruct{Foo: "abc", Bar: 3},
+			customTagStruct{Foo: "def", Bar: 4},
+			Changelog{
+				Change{Type: UPDATE, Path: []string{"foo"}, From: "abc", To: "def"},
+				Change{Type: UPDATE, Path: []string{"bar"}, From: 3, To: 4},
+			},
+			nil,
+		},
+		{
+			"custom-types",
+			customTypeStruct{Foo: "a", Bar: 1},
+			customTypeStruct{Foo: "b", Bar: 2},
+			Changelog{
+				Change{Type: UPDATE, Path: []string{"foo"}, From: CustomStringType("a"), To: CustomStringType("b")},
+				Change{Type: UPDATE, Path: []string{"bar"}, From: CustomIntType(1), To: CustomIntType(2)},
+			},
+			nil,
+		},
 	}
 
 	for _, tc := range cases {
@@ -425,6 +457,10 @@ func TestDiff(t *testing.T) {
 			switch tc.Name {
 			case "mixed-slice-map", "nil-map", "map-nil":
 				options = append(options, StructMapKeySupport())
+			case "embedded-struct-field":
+				options = append(options, FlattenEmbeddedStructs())
+			case "custom-tags":
+				options = append(options, TagName("json"))
 			}
 			cl, err := Diff(tc.A, tc.B, options...)
 
@@ -505,7 +541,7 @@ func TestDiffSliceOrdering(t *testing.T) {
 			nil,
 		},
 		{
-			"nested-slice-delete", map[string][]int{"a": []int{1, 2, 3}}, map[string][]int{"a": []int{1, 3}},
+			"nested-slice-delete", map[string][]int{"a": {1, 2, 3}}, map[string][]int{"a": {1, 3}},
 			Changelog{
 				Change{Type: UPDATE, Path: []string{"a", "1"}, From: 2, To: 3},
 				Change{Type: DELETE, Path: []string{"a", "2"}, From: 3},
@@ -771,7 +807,7 @@ func TestRecursiveCustomDiffer(t *testing.T) {
 	treeB := RecursiveTestStruct{
 		Id: 1,
 		Children: []RecursiveTestStruct{
-			RecursiveTestStruct{
+			{
 				Id:       4,
 				Children: []RecursiveTestStruct{},
 			},
