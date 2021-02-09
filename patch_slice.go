@@ -10,7 +10,7 @@ import (
 )
 
 //renderSlice - handle slice rendering for patch
-func (c *ChangeValue) renderSlice() {
+func (d *Differ) renderSlice(c *ChangeValue) {
 
 	var err error
 	field := c.change.Path[c.pos]
@@ -50,15 +50,15 @@ func (c *ChangeValue) renderSlice() {
 //deleteSliceEntry - deletes are special, they are handled differently based on options
 //              container type etc. We have to have special handling for each
 //              type. Set values are more generic even if they must be instanced
-func (c *ChangeValue) deleteSliceEntry() {
+func (d *Differ) deleteSliceEntry(c *ChangeValue) {
 	//for a slice with only one element
 	if c.ParentLen() == 1 && c.index != -1 {
-		c.ParentSet(reflect.MakeSlice(c.parent.Type(), 0, 0))
+		c.ParentSet(reflect.MakeSlice(c.parent.Type(), 0, 0), d.ConvertCompatibleTypes)
 		c.SetFlag(FlagDeleted)
 		//for a slice with multiple elements
 	} else if c.index != -1 { //this is an array delete the element from the parent
 		c.ParentIndex(c.index).Set(c.ParentIndex(c.ParentLen() - 1))
-		c.ParentSet(c.parent.Slice(0, c.ParentLen()-1))
+		c.ParentSet(c.parent.Slice(0, c.ParentLen()-1), d.ConvertCompatibleTypes)
 		c.SetFlag(FlagDeleted)
 		//for other slice elements, we ignore
 	} else {

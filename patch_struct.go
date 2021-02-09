@@ -7,26 +7,49 @@ import "reflect"
     in place. Keeps the file simpler as well.
 */
 
+type structField struct {
+	f reflect.StructField
+	v reflect.Value
+}
+
+func getNestedFields(v reflect.Value, flattenEmbedded bool) []structField {
+	fields := make([]structField, 0)
+
+	for i := 0; i < v.NumField(); i++ {
+		f := v.Type().Field(i)
+		fv := v.Field(i)
+
+		if fv.Kind() == reflect.Struct && f.Anonymous && flattenEmbedded {
+			fields = append(fields, getNestedFields(fv, flattenEmbedded)...)
+		} else {
+			fields = append(fields, structField{f, fv})
+		}
+	}
+
+	return fields
+}
+
 //patchStruct - handles the rendering of a struct field
-func (c *ChangeValue) patchStruct() {
+func (d *Differ) patchStruct(c *ChangeValue) {
 
 	field := c.change.Path[c.pos]
 
-	for i := 0; i < c.target.NumField(); i++ {
-		f := c.target.Type().Field(i)
-		tname := tagName("diff", f)
+	structFields := getNestedFields(*c.target, d.FlattenEmbeddedStructs)
+	for _, structField := range structFields {
+		f := structField.f
+		tname := tagName(d.TagName, f)
 		if tname == "-" {
 			continue
 		}
 		if tname == field || f.Name == field {
-			x := c.target.Field(i)
-			if hasTagOption("diff", f, "nocreate") {
+			x := structField.v
+			if hasTagOption(d.TagName, f, "nocreate") {
 				c.SetFlag(OptionNoCreate)
 			}
-			if hasTagOption("diff", f, "omitunequal") {
+			if hasTagOption(d.TagName, f, "omitunequal") {
 				c.SetFlag(OptionOmitUnequal)
 			}
-			if hasTagOption("diff", f, "immutable") {
+			if hasTagOption(d.TagName, f, "immutable") {
 				c.SetFlag(OptionImmutable)
 			}
 			c.swap(&x)
@@ -36,8 +59,8 @@ func (c *ChangeValue) patchStruct() {
 }
 
 //track and zero out struct members
-func (c *ChangeValue) deleteStructEntry() {
+func (d *Differ) deleteStructEntry(c *ChangeValue) {
 
 	//deleting a struct value set's it to the 'basic' type
-	c.Set(reflect.Zero(c.target.Type()))
+	c.Set(reflect.Zero(c.target.Type()), d.ConvertCompatibleTypes)
 }

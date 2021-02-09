@@ -1,5 +1,21 @@
 package diff
 
+// ConvertTypes enables values that are convertible to the target type to be converted when patching
+func ConvertCompatibleTypes() func(d *Differ) error {
+	return func(d *Differ) error {
+		d.ConvertCompatibleTypes = true
+		return nil
+	}
+}
+
+// FlattenEmbeddedStructs determines whether fields of embedded structs should behave as if they are directly under the parent
+func FlattenEmbeddedStructs() func(d *Differ) error {
+	return func(d *Differ) error {
+		d.FlattenEmbeddedStructs = true
+		return nil
+	}
+}
+
 // SliceOrdering determines whether the ordering of items in a slice results in a change
 func SliceOrdering(enabled bool) func(d *Differ) error {
 	return func(d *Differ) error {
@@ -29,7 +45,7 @@ func DisableStructValues() func(d *Differ) error {
 func CustomValueDiffers(vd ...ValueDiffer) func(d *Differ) error {
 	return func(d *Differ) error {
 		d.customValueDiffers = append(d.customValueDiffers, vd...)
-		for k, _ := range d.customValueDiffers {
+		for k := range d.customValueDiffers {
 			d.customValueDiffers[k].InsertParentDiffer(d.diff)
 		}
 		return nil

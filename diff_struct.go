@@ -45,7 +45,10 @@ func (d *Differ) diffStruct(path []string, a, b reflect.Value) error {
 		af := a.Field(i)
 		bf := b.FieldByName(field.Name)
 
-		fpath := copyAppend(path, tname)
+		fpath := path
+		if !(d.FlattenEmbeddedStructs && field.Anonymous) {
+			fpath = copyAppend(fpath, tname)
+		}
 
 		if d.Filter != nil && !d.Filter(fpath, a.Type(), field) {
 			continue

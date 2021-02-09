@@ -7,10 +7,11 @@ package diff
 import (
 	"errors"
 	"fmt"
-	"github.com/vmihailenco/msgpack"
 	"reflect"
 	"strconv"
 	"strings"
+
+	"github.com/vmihailenco/msgpack"
 )
 
 const (
@@ -24,15 +25,17 @@ const (
 
 // Differ a configurable diff instance
 type Differ struct {
-	TagName             string
-	SliceOrdering       bool
-	DisableStructValues bool
-	customValueDiffers  []ValueDiffer
-	cl                  Changelog
-	AllowTypeMismatch   bool
-	DiscardParent       bool
-	StructMapKeys       bool
-	Filter              FilterFunc
+	TagName                string
+	SliceOrdering          bool
+	DisableStructValues    bool
+	customValueDiffers     []ValueDiffer
+	cl                     Changelog
+	AllowTypeMismatch      bool
+	DiscardParent          bool
+	StructMapKeys          bool
+	FlattenEmbeddedStructs bool
+	ConvertCompatibleTypes bool
+	Filter                 FilterFunc
 }
 
 // Changelog stores a list of changed items
@@ -250,11 +253,11 @@ func swapChange(t string, c Change) Change {
 }
 
 func idComplex(v interface{}) string {
-	switch v.(type) {
+	switch v := v.(type) {
 	case string:
-		return v.(string)
+		return v
 	case int:
-		return strconv.Itoa(v.(int))
+		return strconv.Itoa(v)
 	default:
 		b, err := msgpack.Marshal(v)
 		if err != nil {
@@ -265,11 +268,11 @@ func idComplex(v interface{}) string {
 
 }
 func idstring(v interface{}) string {
-	switch v.(type) {
+	switch v := v.(type) {
 	case string:
-		return v.(string)
+		return v
 	case int:
-		return strconv.Itoa(v.(int))
+		return strconv.Itoa(v)
 	default:
 		return fmt.Sprint(v)
 	}
