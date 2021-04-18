@@ -65,6 +65,7 @@ func (d *Differ) diffStruct(path []string, a, b reflect.Value) error {
 
 func (d *Differ) structValues(t string, path []string, a reflect.Value) error {
 	var nd Differ
+	nd.Filter = d.Filter
 
 	if t != CREATE && t != DELETE {
 		return ErrInvalidChangeType
@@ -97,6 +98,10 @@ func (d *Differ) structValues(t string, path []string, a reflect.Value) error {
 		xf := x.FieldByName(field.Name)
 
 		fpath := copyAppend(path, tname)
+
+		if nd.Filter != nil && !nd.Filter(fpath, a.Type(), field) {
+			continue
+		}
 
 		err := nd.diff(fpath, xf, af, a.Interface())
 		if err != nil {
