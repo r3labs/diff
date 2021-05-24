@@ -54,6 +54,11 @@ func (d *Differ) diffStruct(path []string, a, b reflect.Value) error {
 			continue
 		}
 
+		// skip private fields
+		if !a.CanInterface() {
+			continue
+		}
+
 		err := d.diff(fpath, af, bf, a.Interface())
 		if err != nil {
 			return err

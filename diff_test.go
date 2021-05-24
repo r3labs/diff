@@ -6,6 +6,7 @@ package diff
 
 import (
 	"reflect"
+	"sync"
 	"testing"
 	"time"
 
@@ -49,6 +50,11 @@ type embedstruct struct {
 type customTagStruct struct {
 	Foo string `json:"foo"`
 	Bar int    `json:"bar"`
+}
+
+type privateValueStruct struct {
+	Public  string
+	Private *sync.RWMutex
 }
 
 type CustomStringType string
@@ -349,6 +355,13 @@ func TestDiff(t *testing.T) {
 			Changelog{
 				Change{Type: UPDATE, Path: []string{"unidentifiables", "0", "value"}, From: 1, To: 5},
 				Change{Type: CREATE, Path: []string{"unidentifiables", "3", "value"}, From: nil, To: 4},
+			},
+			nil,
+		},
+		{
+			"struct-with-private-value", privateValueStruct{Public: "one", Private: new(sync.RWMutex)}, privateValueStruct{Public: "two", Private: new(sync.RWMutex)},
+			Changelog{
+				Change{Type: UPDATE, Path: []string{"Public"}, From: "one", To: "two"},
 			},
 			nil,
 		},
