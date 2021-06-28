@@ -77,7 +77,8 @@ func ExamplePatchWithErrors() {
 	patchLog := Patch(changelog, c)
 
 	//this also demonstrated the nested errors with 'next'
-	errors := patchLog[7].Errors.(*DiffError)
+
+	errors := patchLog[0].Errors.(*DiffError)
 
 	//we can also continue to nest errors if we like
 	message := errors.WithCause(NewError("This is a custom message")).

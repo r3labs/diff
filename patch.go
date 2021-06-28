@@ -1,6 +1,8 @@
 package diff
 
-import "reflect"
+import (
+	"reflect"
+)
 
 /**
 	This is a method of applying a changelog to a value or struct. change logs

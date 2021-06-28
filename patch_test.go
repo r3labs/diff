@@ -193,6 +193,18 @@ func TestPatch(t *testing.T) {
 			},
 			nil,
 		},
+
+		{
+			"map",
+			map[string]interface{}{"1": "one", "3": "three"},
+			map[string]interface{}{"2": "two", "3": "tres"},
+			Changelog{
+				Change{Type: DELETE, Path: []string{"1"}, From: "one", To: nil},
+				Change{Type: CREATE, Path: []string{"2"}, From: nil, To: "two"},
+				Change{Type: UPDATE, Path: []string{"3"}, From: "three", To: "tres"},
+			},
+			nil,
+		},
 	}
 
 	for _, tc := range cases {
