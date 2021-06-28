@@ -76,7 +76,7 @@ func (d *Differ) deleteMapEntry(c *ChangeValue, m, k, v *reflect.Value) {
 		return
 	}
 
-	if m != nil && m.CanSet() && v.IsValid() && v.Kind() != reflect.Int {
+	if m != nil && m.CanSet() && v.IsValid() && v.Kind() == reflect.Struct {
 		for x := 0; x < v.NumField(); x++ {
 			if !v.Field(x).IsZero() {
 				m.SetMapIndex(*k, *v)
