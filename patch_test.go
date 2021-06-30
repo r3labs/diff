@@ -193,7 +193,6 @@ func TestPatch(t *testing.T) {
 			},
 			nil,
 		},
-
 		{
 			"map",
 			map[string]interface{}{"1": "one", "3": "three"},
@@ -202,6 +201,33 @@ func TestPatch(t *testing.T) {
 				Change{Type: DELETE, Path: []string{"1"}, From: "one", To: nil},
 				Change{Type: CREATE, Path: []string{"2"}, From: nil, To: "two"},
 				Change{Type: UPDATE, Path: []string{"3"}, From: "three", To: "tres"},
+			},
+			nil,
+		},
+		{
+			"map-nested-create",
+			map[string]interface{}{"firstName": "John", "lastName": "Michael", "createdBy": "TS", "details": map[string]interface{}{"status": "active", "attributes": map[string]interface{}{"attrA": "A", "attrB": "B"}}},
+			map[string]interface{}{"firstName": "John", "lastName": "Michael", "createdBy": "TS", "details": map[string]interface{}{"status": "active", "attributes": map[string]interface{}{"attrA": "A", "attrB": "B"}, "secondary-attributes": map[string]interface{}{"attrA": "A", "attrB": "B"}}},
+			Changelog{
+				Change{Type: "delete", Path: []string{"details", "secondary-attributes"}, From: nil, To: map[string]interface{}{"attrA": "A", "attrB": "B"}},
+			},
+			nil,
+		},
+		{
+			"map-nested-update",
+			map[string]interface{}{"firstName": "John", "lastName": "Michael", "createdBy": "TS", "details": map[string]interface{}{"status": "active", "attributes": map[string]interface{}{"attrA": "A", "attrB": "B"}}},
+			map[string]interface{}{"firstName": "John", "lastName": "Michael", "createdBy": "TS", "details": map[string]interface{}{"status": "active", "attributes": map[string]interface{}{"attrA": "C", "attrD": "X"}}},
+			Changelog{
+				Change{Type: "delete", Path: []string{"details", "attributes"}, From: map[string]interface{}{"attrA": "A", "attrB": "B"}, To: map[string]interface{}{"attrA": "C", "attrD": "X"}},
+			},
+			nil,
+		},
+		{
+			"map-nested-delete",
+			map[string]interface{}{"firstName": "John", "lastName": "Michael", "createdBy": "TS", "details": map[string]interface{}{"status": "active", "attributes": map[string]interface{}{"attrA": "A", "attrB": "B"}}},
+			map[string]interface{}{"firstName": "John", "lastName": "Michael", "createdBy": "TS", "details": map[string]interface{}{"status": "active"}},
+			Changelog{
+				Change{Type: "delete", Path: []string{"details", "attributes"}, From: map[string]interface{}{"attrA": "A", "attrB": "B"}, To: nil},
 			},
 			nil,
 		},

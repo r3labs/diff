@@ -9,7 +9,6 @@ import (
 
 //renderMap - handle map rendering for patch
 func (d *Differ) renderMap(c *ChangeValue) (m, k, v *reflect.Value) {
-
 	//we must tease out the type of the key, we use the msgpack from diff to recreate the key
 	kt := c.target.Type().Key()
 	field := reflect.New(kt)
@@ -68,34 +67,41 @@ func (d *Differ) renderMap(c *ChangeValue) (m, k, v *reflect.Value) {
 
 }
 
-//deleteMapEntry - deletes are special, they are handled differently based on options
+// updateMapEntry - deletes are special, they are handled differently based on options
 //            container type etc. We have to have special handling for each
 //            type. Set values are more generic even if they must be instanced
-func (d *Differ) deleteMapEntry(c *ChangeValue, m, k, v *reflect.Value) {
-	if k == nil {
+func (d *Differ) updateMapEntry(c *ChangeValue, m, k, v *reflect.Value) {
+	if k == nil || m == nil {
 		return
 	}
 
-	if m != nil && m.CanSet() && v.IsValid() && v.Kind() == reflect.Struct {
-		for x := 0; x < v.NumField(); x++ {
-			if !v.Field(x).IsZero() {
-				m.SetMapIndex(*k, *v)
-				return
-			}
-		} //if all the fields are zero, remove from map
+	switch c.change.Type {
+	case DELETE:
+		if c.HasFlag(FlagDeleted) {
+			return
+		}
+
+		if !m.CanSet() && v.IsValid() && v.Kind() == reflect.Struct {
+			for x := 0; x < v.NumField(); x++ {
+				if !v.Field(x).IsZero() {
+					m.SetMapIndex(*k, *v)
+					return
+				}
+			} //if all the fields are zero, remove from map
+		}
+
 		m.SetMapIndex(*k, reflect.Value{})
 		c.SetFlag(FlagDeleted)
-	} else {
-		switch c.change.Type {
-		case DELETE:
-			m.SetMapIndex(*k, reflect.Value{})
-			c.SetFlag(FlagDeleted)
-		case CREATE:
-			m.SetMapIndex(*k, *v)
-			c.SetFlag(FlagCreated)
-		case UPDATE:
-			m.SetMapIndex(*k, *v)
-			c.SetFlag(FlagUpdated)
-		}
+
+	case CREATE:
+		m.SetMapIndex(*k, *v)
+		c.SetFlag(FlagCreated)
+
+	case UPDATE:
+		m.SetMapIndex(*k, *v)
+		c.SetFlag(FlagUpdated)
+
+	default:
+		panic("NO TYPE SPECIFIED")
 	}
 }

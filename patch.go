@@ -164,7 +164,6 @@ func NewChangeValue(d *Differ, c Change, target interface{}) (ret *ChangeValue) 
 //renderChangeValue applies 'path' in change to target. nil check is foregone
 //                  here as we control usage
 func (d *Differ) renderChangeTarget(c *ChangeValue) {
-
 	//This particular change element may potentially have the immutable flag
 	if c.HasFlag(OptionImmutable) {
 		c.AddError(NewError("Option immutable set, cannot apply change"))
@@ -181,7 +180,7 @@ func (d *Differ) renderChangeTarget(c *ChangeValue) {
 		//map prior to editing the value, it will fail to stick. To fix this, we
 		//defer the safe until the stack unwinds
 		m, k, v := d.renderMap(c)
-		defer d.deleteMapEntry(c, m, k, v)
+		defer d.updateMapEntry(c, m, k, v)
 
 	//path element that is a slice
 	case reflect.Slice:
