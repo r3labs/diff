@@ -209,7 +209,7 @@ func TestPatch(t *testing.T) {
 			map[string]interface{}{"firstName": "John", "lastName": "Michael", "createdBy": "TS", "details": map[string]interface{}{"status": "active", "attributes": map[string]interface{}{"attrA": "A", "attrB": "B"}}},
 			map[string]interface{}{"firstName": "John", "lastName": "Michael", "createdBy": "TS", "details": map[string]interface{}{"status": "active", "attributes": map[string]interface{}{"attrA": "A", "attrB": "B"}, "secondary-attributes": map[string]interface{}{"attrA": "A", "attrB": "B"}}},
 			Changelog{
-				Change{Type: "delete", Path: []string{"details", "secondary-attributes"}, From: nil, To: map[string]interface{}{"attrA": "A", "attrB": "B"}},
+				Change{Type: "create", Path: []string{"details", "secondary-attributes"}, From: nil, To: map[string]interface{}{"attrA": "A", "attrB": "B"}},
 			},
 			nil,
 		},
@@ -218,7 +218,7 @@ func TestPatch(t *testing.T) {
 			map[string]interface{}{"firstName": "John", "lastName": "Michael", "createdBy": "TS", "details": map[string]interface{}{"status": "active", "attributes": map[string]interface{}{"attrA": "A", "attrB": "B"}}},
 			map[string]interface{}{"firstName": "John", "lastName": "Michael", "createdBy": "TS", "details": map[string]interface{}{"status": "active", "attributes": map[string]interface{}{"attrA": "C", "attrD": "X"}}},
 			Changelog{
-				Change{Type: "delete", Path: []string{"details", "attributes"}, From: map[string]interface{}{"attrA": "A", "attrB": "B"}, To: map[string]interface{}{"attrA": "C", "attrD": "X"}},
+				Change{Type: "update", Path: []string{"details", "attributes"}, From: map[string]interface{}{"attrA": "A", "attrB": "B"}, To: map[string]interface{}{"attrA": "C", "attrD": "X"}},
 			},
 			nil,
 		},

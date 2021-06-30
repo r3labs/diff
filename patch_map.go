@@ -101,7 +101,5 @@ func (d *Differ) updateMapEntry(c *ChangeValue, m, k, v *reflect.Value) {
 		m.SetMapIndex(*k, *v)
 		c.SetFlag(FlagUpdated)
 
-	default:
-		panic("NO TYPE SPECIFIED")
 	}
 }
