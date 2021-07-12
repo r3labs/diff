@@ -123,7 +123,12 @@ func (c *ChangeValue) Set(value reflect.Value, convertCompatibleTypes bool) {
 			}
 			c.target.Set(value.Convert(c.target.Type()))
 		} else {
-			c.target.Set(value)
+			if value.IsValid() {
+				c.target.Set(value)
+			} else {
+				t := c.target.Elem()
+				t.Set(reflect.Zero(t.Type()))
+			}
 		}
 		c.SetFlag(FlagApplied)
 	}
