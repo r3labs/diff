@@ -125,7 +125,7 @@ func (c *ChangeValue) Set(value reflect.Value, convertCompatibleTypes bool) {
 		} else {
 			if value.IsValid() {
 				c.target.Set(value)
-			} else {
+			} else if !c.target.IsZero() {
 				t := c.target.Elem()
 				t.Set(reflect.Zero(t.Type()))
 			}
