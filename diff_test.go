@@ -99,6 +99,13 @@ func TestDiff(t *testing.T) {
 			nil,
 		},
 		{
+			"uint-array-insert", [3]uint{1, 2, 3}, [4]uint{1, 2, 3, 4},
+			Changelog{
+				Change{Type: CREATE, Path: []string{"3"}, To: uint(4)},
+			},
+			nil,
+		},
+		{
 			"int-slice-insert", []int{1, 2, 3}, []int{1, 2, 3, 4},
 			Changelog{
 				Change{Type: CREATE, Path: []string{"3"}, To: 4},
@@ -106,7 +113,21 @@ func TestDiff(t *testing.T) {
 			nil,
 		},
 		{
+			"int-array-insert", [3]int{1, 2, 3}, [4]int{1, 2, 3, 4},
+			Changelog{
+				Change{Type: CREATE, Path: []string{"3"}, To: 4},
+			},
+			nil,
+		},
+		{
 			"uint-slice-delete", []uint{1, 2, 3}, []uint{1, 3},
+			Changelog{
+				Change{Type: DELETE, Path: []string{"1"}, From: uint(2)},
+			},
+			nil,
+		},
+		{
+			"uint-array-delete", [3]uint{1, 2, 3}, [2]uint{1, 3},
 			Changelog{
 				Change{Type: DELETE, Path: []string{"1"}, From: uint(2)},
 			},
@@ -121,6 +142,14 @@ func TestDiff(t *testing.T) {
 		},
 		{
 			"uint-slice-insert-delete", []uint{1, 2, 3}, []uint{1, 3, 4},
+			Changelog{
+				Change{Type: DELETE, Path: []string{"1"}, From: uint(2)},
+				Change{Type: CREATE, Path: []string{"2"}, To: uint(4)},
+			},
+			nil,
+		},
+		{
+			"uint-slice-array-delete", [3]uint{1, 2, 3}, [3]uint{1, 3, 4},
 			Changelog{
 				Change{Type: DELETE, Path: []string{"1"}, From: uint(2)},
 				Change{Type: CREATE, Path: []string{"2"}, To: uint(4)},
@@ -143,6 +172,13 @@ func TestDiff(t *testing.T) {
 			nil,
 		},
 		{
+			"string-array-insert", [3]string{"1", "2", "3"}, [4]string{"1", "2", "3", "4"},
+			Changelog{
+				Change{Type: CREATE, Path: []string{"3"}, To: "4"},
+			},
+			nil,
+		},
+		{
 			"string-slice-delete", []string{"1", "2", "3"}, []string{"1", "3"},
 			Changelog{
 				Change{Type: DELETE, Path: []string{"1"}, From: "2"},
@@ -150,7 +186,22 @@ func TestDiff(t *testing.T) {
 			nil,
 		},
 		{
+			"string-slice-delete", [3]string{"1", "2", "3"}, [2]string{"1", "3"},
+			Changelog{
+				Change{Type: DELETE, Path: []string{"1"}, From: "2"},
+			},
+			nil,
+		},
+		{
 			"string-slice-insert-delete", []string{"1", "2", "3"}, []string{"1", "3", "4"},
+			Changelog{
+				Change{Type: DELETE, Path: []string{"1"}, From: "2"},
+				Change{Type: CREATE, Path: []string{"2"}, To: "4"},
+			},
+			nil,
+		},
+		{
+			"string-array-insert-delete", [3]string{"1", "2", "3"}, [3]string{"1", "3", "4"},
 			Changelog{
 				Change{Type: DELETE, Path: []string{"1"}, From: "2"},
 				Change{Type: CREATE, Path: []string{"2"}, To: "4"},
@@ -166,7 +217,23 @@ func TestDiff(t *testing.T) {
 			nil,
 		},
 		{
+			"comparable-array-insert", [1]tistruct{{"one", 1}}, [2]tistruct{{"one", 1}, {"two", 2}},
+			Changelog{
+				Change{Type: CREATE, Path: []string{"two", "name"}, To: "two"},
+				Change{Type: CREATE, Path: []string{"two", "value"}, To: 2},
+			},
+			nil,
+		},
+		{
 			"comparable-slice-delete", []tistruct{{"one", 1}, {"two", 2}}, []tistruct{{"one", 1}},
+			Changelog{
+				Change{Type: DELETE, Path: []string{"two", "name"}, From: "two"},
+				Change{Type: DELETE, Path: []string{"two", "value"}, From: 2},
+			},
+			nil,
+		},
+		{
+			"comparable-array-delete", [2]tistruct{{"one", 1}, {"two", 2}}, [1]tistruct{{"one", 1}},
 			Changelog{
 				Change{Type: DELETE, Path: []string{"two", "name"}, From: "two"},
 				Change{Type: DELETE, Path: []string{"two", "value"}, From: 2},
@@ -181,7 +248,21 @@ func TestDiff(t *testing.T) {
 			nil,
 		},
 		{
+			"comparable-array-update", [1]tistruct{{"one", 1}}, [1]tistruct{{"one", 50}},
+			Changelog{
+				Change{Type: UPDATE, Path: []string{"one", "value"}, From: 1, To: 50},
+			},
+			nil,
+		},
+		{
 			"map-slice-insert", []map[string]string{{"test": "123"}}, []map[string]string{{"test": "123", "tset": "456"}},
+			Changelog{
+				Change{Type: CREATE, Path: []string{"0", "tset"}, To: "456"},
+			},
+			nil,
+		},
+		{
+			"map-array-insert", [1]map[string]string{{"test": "123"}}, [1]map[string]string{{"test": "123", "tset": "456"}},
 			Changelog{
 				Change{Type: CREATE, Path: []string{"0", "tset"}, To: "456"},
 			},
@@ -195,6 +276,13 @@ func TestDiff(t *testing.T) {
 			nil,
 		},
 		{
+			"map-array-update", [1]map[string]string{{"test": "123"}}, [1]map[string]string{{"test": "456"}},
+			Changelog{
+				Change{Type: UPDATE, Path: []string{"0", "test"}, From: "123", To: "456"},
+			},
+			nil,
+		},
+		{
 			"map-slice-delete", []map[string]string{{"test": "123", "tset": "456"}}, []map[string]string{{"test": "123"}},
 			Changelog{
 				Change{Type: DELETE, Path: []string{"0", "tset"}, From: "456"},
@@ -202,7 +290,21 @@ func TestDiff(t *testing.T) {
 			nil,
 		},
 		{
+			"map-array-delete", [1]map[string]string{{"test": "123", "tset": "456"}}, [1]map[string]string{{"test": "123"}},
+			Changelog{
+				Change{Type: DELETE, Path: []string{"0", "tset"}, From: "456"},
+			},
+			nil,
+		},
+		{
 			"map-interface-slice-update", []map[string]interface{}{{"test": nil}}, []map[string]interface{}{{"test": "456"}},
+			Changelog{
+				Change{Type: UPDATE, Path: []string{"0", "test"}, From: nil, To: "456"},
+			},
+			nil,
+		},
+		{
+			"map-interface-array-update", [1]map[string]interface{}{{"test": nil}}, [1]map[string]interface{}{{"test": "456"}},
 			Changelog{
 				Change{Type: UPDATE, Path: []string{"0", "test"}, From: nil, To: "456"},
 			},
@@ -258,6 +360,13 @@ func TestDiff(t *testing.T) {
 			nil,
 		},
 		{
+			"nested-array-insert", map[string][3]int{"a": {1, 2, 3}}, map[string][4]int{"a": {1, 2, 3, 4}},
+			Changelog{
+				Change{Type: CREATE, Path: []string{"a", "3"}, To: 4},
+			},
+			nil,
+		},
+		{
 			"nested-slice-update", map[string][]int{"a": {1, 2, 3}}, map[string][]int{"a": {1, 4, 3}},
 			Changelog{
 				Change{Type: UPDATE, Path: []string{"a", "1"}, From: 2, To: 4},
@@ -265,7 +374,21 @@ func TestDiff(t *testing.T) {
 			nil,
 		},
 		{
+			"nested-array-update", map[string][3]int{"a": {1, 2, 3}}, map[string][3]int{"a": {1, 4, 3}},
+			Changelog{
+				Change{Type: UPDATE, Path: []string{"a", "1"}, From: 2, To: 4},
+			},
+			nil,
+		},
+		{
 			"nested-slice-delete", map[string][]int{"a": {1, 2, 3}}, map[string][]int{"a": {1, 3}},
+			Changelog{
+				Change{Type: DELETE, Path: []string{"a", "1"}, From: 2, To: nil},
+			},
+			nil,
+		},
+		{
+			"nested-array-delete", map[string][3]int{"a": {1, 2, 3}}, map[string][2]int{"a": {1, 3}},
 			Changelog{
 				Change{Type: DELETE, Path: []string{"a", "1"}, From: 2, To: nil},
 			},
