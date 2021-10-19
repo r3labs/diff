@@ -8,12 +8,12 @@ import "reflect"
 
 func (d *Differ) diffInterface(path []string, a, b reflect.Value, parent interface{}) error {
 	if a.Kind() == reflect.Invalid {
-		d.cl.Add(CREATE, path, nil, b.Interface())
+		d.cl.Add(CREATE, path, nil, exportInterface(b))
 		return nil
 	}
 
 	if b.Kind() == reflect.Invalid {
-		d.cl.Add(DELETE, path, a.Interface(), nil)
+		d.cl.Add(DELETE, path, exportInterface(a), nil)
 		return nil
 	}
 
@@ -26,12 +26,12 @@ func (d *Differ) diffInterface(path []string, a, b reflect.Value, parent interfa
 	}
 
 	if a.IsNil() {
-		d.cl.Add(UPDATE, path, nil, b.Interface(), parent)
+		d.cl.Add(UPDATE, path, nil, exportInterface(b), parent)
 		return nil
 	}
 
 	if b.IsNil() {
-		d.cl.Add(UPDATE, path, a.Interface(), nil, parent)
+		d.cl.Add(UPDATE, path, exportInterface(a), nil, parent)
 		return nil
 	}
 
