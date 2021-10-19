@@ -1,9 +1,11 @@
-package diff
+package diff_test
 
 import (
 	"fmt"
 	"math/big"
 	"reflect"
+
+	"github.com/r3labs/diff/v2"
 )
 
 //Try to do a bunch of stuff that will result in some or all failures
@@ -68,20 +70,20 @@ func ExamplePatchWithErrors() {
 		Name: "second",
 	}
 
-	changelog, err := Diff(a, b)
+	changelog, err := diff.Diff(a, b)
 	if err != nil {
 		panic(err)
 	}
 
 	//This fails in total because c is not assignable (passed by Value)
-	patchLog := Patch(changelog, c)
+	patchLog := diff.Patch(changelog, c)
 
 	//this also demonstrated the nested errors with 'next'
 
-	errors := patchLog[0].Errors.(*DiffError)
+	errors := patchLog[0].Errors.(*diff.DiffError)
 
 	//we can also continue to nest errors if we like
-	message := errors.WithCause(NewError("This is a custom message")).
+	message := errors.WithCause(diff.NewError("This is a custom message")).
 		WithCause(fmt.Errorf("this is an error from somewhere else but still compatible")).
 		Error()
 
@@ -89,17 +91,17 @@ func ExamplePatchWithErrors() {
 	changelog[2].Path[1] = "bad index"
 	changelog[3].Path[0] = "bad struct field"
 
-	patchLog = Patch(changelog, &c)
+	patchLog = diff.Patch(changelog, &c)
 
-	patchLog, _ = Merge(a, nil, &c)
+	patchLog, _ = diff.Merge(a, nil, &c)
 
-	patchLog, _ = Merge(a, d, &c)
+	patchLog, _ = diff.Merge(a, d, &c)
 
 	//try patching a string
-	patchLog = Patch(changelog, message)
+	patchLog = diff.Patch(changelog, message)
 
 	//test an invalid change Value
-	var bad *ChangeValue
+	var bad *diff.ChangeValue
 	if bad.IsValid() {
 		fmt.Print("this should never happen")
 	}
@@ -158,7 +160,7 @@ func ExampleMerge() {
 	c.Labels["colors"] = 42
 
 	//the only error that can happen here comes from the diff step
-	patchLog, _ := Merge(a, b, &c)
+	patchLog, _ := diff.Merge(a, b, &c)
 
 	//Note that unlike our patch version we've not included 'create' in the
 	//tag for nutrients. This will omit "vitamin e" from ending up in c
@@ -169,7 +171,6 @@ func ExampleMerge() {
 
 //ExamplePrimitiveSlice demonstrates working with arrays and primitive values
 func ExamplePrimitiveSlice() {
-
 	sla := []string{
 		"this",
 		"is",
@@ -189,11 +190,11 @@ func ExamplePrimitiveSlice() {
 		"ok",
 	}
 
-	patch, err := Diff(sla, slb, StructMapKeySupport())
+	patch, err := diff.Diff(sla, slb, diff.StructMapKeySupport())
 	if err != nil {
 		fmt.Print("failed to diff sla and slb")
 	}
-	cl := Patch(patch, &slc)
+	cl := diff.Patch(patch, &slc)
 
 	//now the other way, round
 	sla = []string{
@@ -210,11 +211,11 @@ func ExamplePrimitiveSlice() {
 		"simple",
 	}
 
-	patch, err = Diff(sla, slb)
+	patch, err = diff.Diff(sla, slb)
 	if err != nil {
 		fmt.Print("failed to diff sla and slb")
 	}
-	cl = Patch(patch, &slc)
+	cl = diff.Patch(patch, &slc)
 
 	//and finally a clean view
 	sla = []string{
@@ -226,11 +227,11 @@ func ExamplePrimitiveSlice() {
 	}
 	slb = []string{}
 
-	patch, err = Diff(sla, slb)
+	patch, err = diff.Diff(sla, slb)
 	if err != nil {
 		fmt.Print("failed to diff sla and slb")
 	}
-	cl = Patch(patch, &slc)
+	cl = diff.Patch(patch, &slc)
 
 	fmt.Printf("%d changes made to string array; %v", len(cl), slc)
 
@@ -302,12 +303,12 @@ func ExampleComplexSlicePatch() {
 	}
 	c := Attributes{}
 
-	changelog, err := Diff(a, b, DiscardComplexOrigin(), StructMapKeySupport())
+	changelog, err := diff.Diff(a, b, diff.DiscardComplexOrigin(), diff.StructMapKeySupport())
 	if err != nil {
 		panic(err)
 	}
 
-	patchLog := Patch(changelog, &c)
+	patchLog := diff.Patch(changelog, &c)
 
 	fmt.Printf("Patched %d entries and encountered %d errors", len(patchLog), patchLog.ErrorCount())
 
@@ -367,12 +368,12 @@ func ExampleComplexMapPatch() {
 		Number:      23.4453,
 	}
 
-	changelog, err := Diff(a, b)
+	changelog, err := diff.Diff(a, b)
 	if err != nil {
 		panic(err)
 	}
 
-	patchLog := Patch(changelog, &c)
+	patchLog := diff.Patch(changelog, &c)
 
 	fmt.Printf("%#v", len(patchLog))
 
@@ -466,15 +467,15 @@ func ExamplePatch() {
 	}
 	d.Nutrients = append(d.Nutrients, "minerals")
 
-	changelog, err := Diff(a, b)
+	changelog, err := diff.Diff(a, b)
 	if err != nil {
 		panic(err)
 	}
 
-	patchLog := Patch(changelog, &c)
+	patchLog := diff.Patch(changelog, &c)
 
-	changelog, _ = Diff(a, d)
-	patchLog = Patch(changelog, &c)
+	changelog, _ = diff.Diff(a, d)
+	patchLog = diff.Patch(changelog, &c)
 
 	fmt.Printf("%#v", len(patchLog))
 
@@ -532,7 +533,7 @@ func ExampleDiff() {
 		},
 	}
 
-	changelog, err := Diff(a, b)
+	changelog, err := diff.Diff(a, b)
 	if err != nil {
 		panic(err)
 	}
@@ -576,7 +577,7 @@ func ExampleFilter() {
 		},
 	}
 
-	d, err := NewDiffer(Filter(func(path []string, parent reflect.Type, field reflect.StructField) bool {
+	d, err := diff.NewDiffer(diff.Filter(func(path []string, parent reflect.Type, field reflect.StructField) bool {
 		return field.Name != "Name"
 	}))
 	if err != nil {
@@ -589,7 +590,7 @@ func ExampleFilter() {
 	}
 
 	fmt.Printf("%#v", changelog)
-	// Output: diff.Changelog{diff.Change{Type:"update", Path:[]string{"id"}, From:1, To:2, parent:diff.Fruit{ID:1, Name:"Green Apple", Healthy:true, Nutrients:[]string{"vitamin c", "vitamin d"}, Tags:[]diff.Tag(nil)}}, diff.Change{Type:"create", Path:[]string{"nutrients", "2"}, From:interface {}(nil), To:"vitamin e", parent:interface {}(nil)}}
+	// Output: diff.Changelog{diff.Change{Type:"update", Path:[]string{"id"}, From:1, To:2, parent:diff_test.Fruit{ID:1, Name:"Green Apple", Healthy:true, Nutrients:[]string{"vitamin c", "vitamin d"}, Tags:[]diff_test.Tag(nil)}}, diff.Change{Type:"create", Path:[]string{"nutrients", "2"}, From:interface {}(nil), To:"vitamin e", parent:interface {}(nil)}}
 }
 
 func ExamplePrivatePtr() {
@@ -600,11 +601,11 @@ func ExamplePrivatePtr() {
 	a := number{}
 	b := number{value: big.NewInt(111)}
 
-	changelog, err := Diff(a, b)
+	changelog, err := diff.Diff(a, b)
 	if err != nil {
 		panic(err)
 	}
 
 	fmt.Printf("%#v", changelog)
-	// Output: diff.Changelog{diff.Change{Type:"update", Path:[]string{"value"}, From:interface {}(nil), To:111, parent:diff.number{value:(*big.Int)(nil), exp:0}}}
+	// Output: diff.Changelog{diff.Change{Type:"update", Path:[]string{"value"}, From:interface {}(nil), To:111, parent:diff_test.number{value:(*big.Int)(nil), exp:0}}}
 }
