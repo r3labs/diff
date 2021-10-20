@@ -24,15 +24,15 @@ func (d *Differ) diffMap(path []string, a, b reflect.Value) error {
 
 	for _, k := range a.MapKeys() {
 		ae := a.MapIndex(k)
-		c.addA(k.Interface(), &ae)
+		c.addA(exportInterface(k), &ae)
 	}
 
 	for _, k := range b.MapKeys() {
 		be := b.MapIndex(k)
-		c.addB(k.Interface(), &be)
+		c.addB(exportInterface(k), &be)
 	}
 
-	return d.diffComparative(path, c, a.Interface())
+	return d.diffComparative(path, c, exportInterface(a))
 }
 
 func (d *Differ) mapValues(t string, path []string, a reflect.Value) error {
