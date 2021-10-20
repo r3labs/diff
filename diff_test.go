@@ -590,9 +590,16 @@ func TestDiff(t *testing.T) {
 			nil,
 		},
 		{
-			"struct-private-map", privateMapStruct{set: map[string]interface{}{"1": struct{}{}, "2": struct{}{}}}, privateMapStruct{set: map[string]interface{}{"1": struct{}{}, "2": struct{}{}, "3": struct{}{}}},
+			"struct-private-map-create", privateMapStruct{set: map[string]interface{}{"1": struct{}{}, "2": struct{}{}}}, privateMapStruct{set: map[string]interface{}{"1": struct{}{}, "2": struct{}{}, "3": struct{}{}}},
 			diff.Changelog{
 				diff.Change{Type: diff.CREATE, Path: []string{"set", "3"}, From: nil, To: struct{}{}},
+			},
+			nil,
+		},
+		{
+			"struct-private-map-delete", privateMapStruct{set: map[string]interface{}{"1": struct{}{}, "2": struct{}{}, "3": struct{}{}}}, privateMapStruct{set: map[string]interface{}{"1": struct{}{}, "2": struct{}{}}},
+			diff.Changelog{
+				diff.Change{Type: diff.DELETE, Path: []string{"set", "3"}, From: struct{}{}, To: nil},
 			},
 			nil,
 		},

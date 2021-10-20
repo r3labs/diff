@@ -14,8 +14,8 @@ func (d *Differ) diffComparative(path []string, c *ComparativeList, parent inter
 		if d.StructMapKeys {
 			id = idComplex(k)
 		}
-		fpath := copyAppend(path, id)
 
+		fpath := copyAppend(path, id)
 		nv := reflect.ValueOf(nil)
 
 		if c.m[k].A == nil {
