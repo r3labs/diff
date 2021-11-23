@@ -59,7 +59,7 @@ func (d *Differ) diffStruct(path []string, a, b reflect.Value) error {
 			continue
 		}
 
-		err := d.diff(fpath, af, bf, a.Interface())
+		err := d.diff(fpath, af, bf, exportInterface(a))
 		if err != nil {
 			return err
 		}
@@ -108,7 +108,7 @@ func (d *Differ) structValues(t string, path []string, a reflect.Value) error {
 			continue
 		}
 
-		err := nd.diff(fpath, xf, af, a.Interface())
+		err := nd.diff(fpath, xf, af, exportInterface(a))
 		if err != nil {
 			return err
 		}

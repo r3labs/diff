@@ -11,12 +11,12 @@ import (
 
 func (d *Differ) diffTime(path []string, a, b reflect.Value) error {
 	if a.Kind() == reflect.Invalid {
-		d.cl.Add(CREATE, path, nil, b.Interface())
+		d.cl.Add(CREATE, path, nil, exportInterface(b))
 		return nil
 	}
 
 	if b.Kind() == reflect.Invalid {
-		d.cl.Add(DELETE, path, a.Interface(), nil)
+		d.cl.Add(DELETE, path, exportInterface(a), nil)
 		return nil
 	}
 
@@ -25,11 +25,11 @@ func (d *Differ) diffTime(path []string, a, b reflect.Value) error {
 	}
 
 	// Marshal and unmarshal time type will lose accuracy. Using unix nano to compare time type.
-	au := a.Interface().(time.Time).UnixNano()
-	bu := b.Interface().(time.Time).UnixNano()
+	au := exportInterface(a).(time.Time).UnixNano()
+	bu := exportInterface(b).(time.Time).UnixNano()
 
 	if au != bu {
-		d.cl.Add(UPDATE, path, a.Interface(), b.Interface())
+		d.cl.Add(UPDATE, path, exportInterface(a), exportInterface(b))
 	}
 
 	return nil
