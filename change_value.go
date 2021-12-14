@@ -108,8 +108,10 @@ func (c *ChangeValue) Set(value reflect.Value, convertCompatibleTypes bool) {
 			if r := recover(); r != nil {
 				c.AddError(NewError(r.(string)))
 				c.SetFlag(FlagFailed)
+
 			}
 		}()
+
 		if c.HasFlag(OptionImmutable) {
 			c.SetFlag(FlagIgnored)
 			return
@@ -124,7 +126,13 @@ func (c *ChangeValue) Set(value reflect.Value, convertCompatibleTypes bool) {
 			c.target.Set(value.Convert(c.target.Type()))
 		} else {
 			if value.IsValid() {
-				c.target.Set(value)
+				if c.target.Kind() == reflect.Ptr && value.Kind() != reflect.Ptr {
+					tv := reflect.New(value.Type())
+					tv.Elem().Set(value)
+					c.target.Set(tv)
+				} else {
+					c.target.Set(value)
+				}
 			} else if !c.target.IsZero() {
 				t := c.target.Elem()
 				t.Set(reflect.Zero(t.Type()))

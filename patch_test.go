@@ -285,3 +285,21 @@ func TestPatch(t *testing.T) {
 		require.Equal(t, len(cl), len(pl))
 	})
 }
+
+func TestPatchPointer(t *testing.T) {
+	type tps struct {
+		S *string
+	}
+
+	str1 := "before"
+	str2 := "after"
+
+	t1 := tps{S: &str1}
+	t2 := tps{S: &str2}
+
+	changelog, err := diff.Diff(t1, t2)
+	assert.NoError(t, err)
+
+	patchLog := diff.Patch(changelog, &t1)
+	assert.False(t, patchLog.HasErrors())
+}
