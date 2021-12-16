@@ -1,6 +1,7 @@
 package diff_test
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -302,4 +303,33 @@ func TestPatchPointer(t *testing.T) {
 
 	patchLog := diff.Patch(changelog, &t1)
 	assert.False(t, patchLog.HasErrors())
+}
+
+func TestPatchPointerConvertTypes(t *testing.T) {
+	type tps struct {
+		S *int
+	}
+
+	val1 := 1
+	val2 := 2
+
+	t1 := tps{S: &val1}
+	t2 := tps{S: &val2}
+
+	changelog, err := diff.Diff(t1, t2)
+	assert.NoError(t, err)
+
+	js, err := json.Marshal(changelog)
+	assert.NoError(t, err)
+
+	assert.NoError(t, json.Unmarshal(js, &changelog))
+
+	d, err := diff.NewDiffer(diff.ConvertCompatibleTypes())
+	assert.NoError(t, err)
+
+	assert.Equal(t, 1, *t1.S)
+
+	patchLog := d.Patch(changelog, &t1)
+	assert.False(t, patchLog.HasErrors())
+	assert.Equal(t, 2, *t1.S)
 }

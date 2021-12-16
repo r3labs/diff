@@ -118,12 +118,27 @@ func (c *ChangeValue) Set(value reflect.Value, convertCompatibleTypes bool) {
 		}
 
 		if convertCompatibleTypes {
-			if !value.Type().ConvertibleTo(c.target.Type()) {
-				c.AddError(fmt.Errorf("Value of type %s is not convertible to %s", value.Type().String(), c.target.Type().String()))
-				c.SetFlag(FlagFailed)
-				return
+			if c.target.Kind() == reflect.Ptr && value.Kind() != reflect.Ptr {
+				if !value.Type().ConvertibleTo(c.target.Elem().Type()) {
+					c.AddError(fmt.Errorf("Value of type %s is not convertible to %s", value.Type().String(), c.target.Type().String()))
+					c.SetFlag(FlagFailed)
+					return
+				}
+
+				fmt.Println(c.target.Elem().Type())
+
+				tv := reflect.New(c.target.Elem().Type())
+				tv.Elem().Set(value.Convert(c.target.Elem().Type()))
+				c.target.Set(tv)
+			} else {
+				if !value.Type().ConvertibleTo(c.target.Type()) {
+					c.AddError(fmt.Errorf("Value of type %s is not convertible to %s", value.Type().String(), c.target.Type().String()))
+					c.SetFlag(FlagFailed)
+					return
+				}
+
+				c.target.Set(value.Convert(c.target.Type()))
 			}
-			c.target.Set(value.Convert(c.target.Type()))
 		} else {
 			if value.IsValid() {
 				if c.target.Kind() == reflect.Ptr && value.Kind() != reflect.Ptr {
