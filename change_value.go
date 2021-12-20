@@ -103,58 +103,67 @@ func (c ChangeValue) Len() int {
 
 //Set echos reflect set
 func (c *ChangeValue) Set(value reflect.Value, convertCompatibleTypes bool) {
-	if c != nil {
-		defer func() {
-			if r := recover(); r != nil {
-				c.AddError(NewError(r.(string)))
-				c.SetFlag(FlagFailed)
+	if c == nil {
+		return
+	}
 
+	defer func() {
+		if r := recover(); r != nil {
+			switch e := r.(type) {
+			case string:
+				c.AddError(NewError(e))
+			case *reflect.ValueError:
+				c.AddError(NewError(e.Error()))
 			}
-		}()
 
-		if c.HasFlag(OptionImmutable) {
-			c.SetFlag(FlagIgnored)
-			return
+			c.SetFlag(FlagFailed)
 		}
+	}()
 
-		if convertCompatibleTypes {
+	if c.HasFlag(OptionImmutable) {
+		c.SetFlag(FlagIgnored)
+		return
+	}
+
+	if convertCompatibleTypes {
+		if c.target.Kind() == reflect.Ptr && value.Kind() != reflect.Ptr {
+			if !value.IsValid() {
+				c.target.Set(reflect.Zero(c.target.Type()))
+				c.SetFlag(FlagApplied)
+				return
+			} else if !value.Type().ConvertibleTo(c.target.Elem().Type()) {
+				c.AddError(fmt.Errorf("Value of type %s is not convertible to %s", value.Type().String(), c.target.Type().String()))
+				c.SetFlag(FlagFailed)
+				return
+			}
+
+			tv := reflect.New(c.target.Elem().Type())
+			tv.Elem().Set(value.Convert(c.target.Elem().Type()))
+			c.target.Set(tv)
+		} else {
+			if !value.Type().ConvertibleTo(c.target.Type()) {
+				c.AddError(fmt.Errorf("Value of type %s is not convertible to %s", value.Type().String(), c.target.Type().String()))
+				c.SetFlag(FlagFailed)
+				return
+			}
+
+			c.target.Set(value.Convert(c.target.Type()))
+		}
+	} else {
+		if value.IsValid() {
 			if c.target.Kind() == reflect.Ptr && value.Kind() != reflect.Ptr {
-				if !value.Type().ConvertibleTo(c.target.Elem().Type()) {
-					c.AddError(fmt.Errorf("Value of type %s is not convertible to %s", value.Type().String(), c.target.Type().String()))
-					c.SetFlag(FlagFailed)
-					return
-				}
-
-				fmt.Println(c.target.Elem().Type())
-
-				tv := reflect.New(c.target.Elem().Type())
-				tv.Elem().Set(value.Convert(c.target.Elem().Type()))
+				tv := reflect.New(value.Type())
+				tv.Elem().Set(value)
 				c.target.Set(tv)
 			} else {
-				if !value.Type().ConvertibleTo(c.target.Type()) {
-					c.AddError(fmt.Errorf("Value of type %s is not convertible to %s", value.Type().String(), c.target.Type().String()))
-					c.SetFlag(FlagFailed)
-					return
-				}
-
-				c.target.Set(value.Convert(c.target.Type()))
+				c.target.Set(value)
 			}
-		} else {
-			if value.IsValid() {
-				if c.target.Kind() == reflect.Ptr && value.Kind() != reflect.Ptr {
-					tv := reflect.New(value.Type())
-					tv.Elem().Set(value)
-					c.target.Set(tv)
-				} else {
-					c.target.Set(value)
-				}
-			} else if !c.target.IsZero() {
-				t := c.target.Elem()
-				t.Set(reflect.Zero(t.Type()))
-			}
+		} else if !c.target.IsZero() {
+			t := c.target.Elem()
+			t.Set(reflect.Zero(t.Type()))
 		}
-		c.SetFlag(FlagApplied)
 	}
+	c.SetFlag(FlagApplied)
 }
 
 //Index echo for index

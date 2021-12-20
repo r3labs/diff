@@ -285,51 +285,61 @@ func TestPatch(t *testing.T) {
 		assert.Equal(t, int(b.Bar), a.Bar)
 		require.Equal(t, len(cl), len(pl))
 	})
-}
 
-func TestPatchPointer(t *testing.T) {
-	type tps struct {
-		S *string
-	}
+	t.Run("pointer", func(t *testing.T) {
+		type tps struct {
+			S *string
+		}
 
-	str1 := "before"
-	str2 := "after"
+		str1 := "before"
+		str2 := "after"
 
-	t1 := tps{S: &str1}
-	t2 := tps{S: &str2}
+		t1 := tps{S: &str1}
+		t2 := tps{S: &str2}
 
-	changelog, err := diff.Diff(t1, t2)
-	assert.NoError(t, err)
+		changelog, err := diff.Diff(t1, t2)
+		assert.NoError(t, err)
 
-	patchLog := diff.Patch(changelog, &t1)
-	assert.False(t, patchLog.HasErrors())
-}
+		patchLog := diff.Patch(changelog, &t1)
+		assert.False(t, patchLog.HasErrors())
+	})
 
-func TestPatchPointerConvertTypes(t *testing.T) {
-	type tps struct {
-		S *int
-	}
+	t.Run("pointer-with-converted-type", func(t *testing.T) {
+		type tps struct {
+			S *int
+		}
 
-	val1 := 1
-	val2 := 2
+		val1 := 1
+		val2 := 2
 
-	t1 := tps{S: &val1}
-	t2 := tps{S: &val2}
+		t1 := tps{S: &val1}
+		t2 := tps{S: &val2}
 
-	changelog, err := diff.Diff(t1, t2)
-	assert.NoError(t, err)
+		changelog, err := diff.Diff(t1, t2)
+		assert.NoError(t, err)
 
-	js, err := json.Marshal(changelog)
-	assert.NoError(t, err)
+		js, err := json.Marshal(changelog)
+		assert.NoError(t, err)
 
-	assert.NoError(t, json.Unmarshal(js, &changelog))
+		assert.NoError(t, json.Unmarshal(js, &changelog))
 
-	d, err := diff.NewDiffer(diff.ConvertCompatibleTypes())
-	assert.NoError(t, err)
+		d, err := diff.NewDiffer(diff.ConvertCompatibleTypes())
+		assert.NoError(t, err)
 
-	assert.Equal(t, 1, *t1.S)
+		assert.Equal(t, 1, *t1.S)
 
-	patchLog := d.Patch(changelog, &t1)
-	assert.False(t, patchLog.HasErrors())
-	assert.Equal(t, 2, *t1.S)
+		patchLog := d.Patch(changelog, &t1)
+		assert.False(t, patchLog.HasErrors())
+		assert.Equal(t, 2, *t1.S)
+
+		// test nil pointer
+		t1 = tps{S: &val1}
+		t2 = tps{S: nil}
+
+		changelog, err = diff.Diff(t1, t2)
+		assert.NoError(t, err)
+
+		patchLog = d.Patch(changelog, &t1)
+		assert.False(t, patchLog.HasErrors())
+	})
 }
