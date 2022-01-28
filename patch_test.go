@@ -304,6 +304,34 @@ func TestPatch(t *testing.T) {
 		assert.False(t, patchLog.HasErrors())
 	})
 
+	t.Run("map-to-pointer", func(t *testing.T) {
+		t1 := make(map[string]*tmstruct)
+		t2 := map[string]*tmstruct{"after": {Foo: "val"}}
+
+		changelog, err := diff.Diff(t1, t2)
+		assert.NoError(t, err)
+
+		patchLog := diff.Patch(changelog, &t1)
+		assert.False(t, patchLog.HasErrors())
+
+		assert.True(t, len(t2) == len(t1))
+		assert.Equal(t, t1["after"], &tmstruct{Foo: "val"})
+	})
+
+	t.Run("map-to-nil-pointer", func(t *testing.T) {
+		t1 := make(map[string]*tmstruct)
+		t2 := map[string]*tmstruct{"after": nil}
+
+		changelog, err := diff.Diff(t1, t2)
+		assert.NoError(t, err)
+
+		patchLog := diff.Patch(changelog, &t1)
+		assert.False(t, patchLog.HasErrors())
+
+		assert.Equal(t, len(t2), len(t1))
+		assert.Nil(t, t1["after"])
+	})
+
 	t.Run("pointer-with-converted-type", func(t *testing.T) {
 		type tps struct {
 			S *int

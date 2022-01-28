@@ -188,6 +188,14 @@ func (d *Differ) renderChangeTarget(c *ChangeValue) {
 
 	//walking a path means dealing with real elements
 	case reflect.Interface, reflect.Ptr:
+		if c.target.IsNil() {
+			n := reflect.New(c.target.Type().Elem())
+			c.target.Set(n)
+			c.target = &n
+			d.renderChangeTarget(c)
+			return
+		}
+
 		el := c.target.Elem()
 		c.target = &el
 		c.ClearFlag(FlagInvalidTarget)
