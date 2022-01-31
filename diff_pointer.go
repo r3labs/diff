@@ -17,12 +17,18 @@ func (d *Differ) diffPtr(path []string, a, b reflect.Value, parent interface{}) 
 			if !b.IsNil() {
 				return d.diff(path, reflect.ValueOf(nil), reflect.Indirect(b), parent)
 			}
+
+			d.cl.Add(CREATE, path, nil, exportInterface(b), parent)
+			return nil
 		}
 
 		if b.Kind() == reflect.Invalid {
 			if !a.IsNil() {
 				return d.diff(path, reflect.Indirect(a), reflect.ValueOf(nil), parent)
 			}
+
+			d.cl.Add(DELETE, path, exportInterface(a), nil, parent)
+			return nil
 		}
 
 		return ErrTypeMismatch
