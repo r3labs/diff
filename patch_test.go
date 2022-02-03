@@ -126,6 +126,12 @@ func TestPatch(t *testing.T) {
 			nil,
 		},
 		{
+			"struct-string-pointer-update-to-nil", &tstruct{Pointer: sptr("test")}, &tstruct{Pointer: nil},
+			diff.Changelog{
+				diff.Change{Type: diff.UPDATE, Path: []string{"pointer"}, From: sptr("test"), To: nil},
+			},
+			nil,
+		}, {
 			"struct-generic-slice-insert", &tstruct{Values: []string{"one"}}, &tstruct{Values: []string{"one", "two"}},
 			diff.Changelog{
 				diff.Change{Type: diff.CREATE, Path: []string{"values", "1"}, From: nil, To: "two"},

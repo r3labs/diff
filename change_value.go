@@ -158,6 +158,8 @@ func (c *ChangeValue) Set(value reflect.Value, convertCompatibleTypes bool) {
 			} else {
 				c.target.Set(value)
 			}
+		} else if c.target.Kind() == reflect.Ptr {
+			c.target.Set(reflect.Zero(c.target.Type()))
 		} else if !c.target.IsZero() {
 			t := c.target.Elem()
 			t.Set(reflect.Zero(t.Type()))
