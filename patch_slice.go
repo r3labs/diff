@@ -17,12 +17,23 @@ func (d *Differ) renderSlice(c *ChangeValue) {
 
 	//field better be an index of the slice
 	if c.index, err = strconv.Atoi(field); err != nil {
-		c.AddError(NewErrorf("invalid index in path. %s is not a number", field).
-			WithCause(err))
+		//if struct element is has identifier, use it instead
+		if identifier(d.TagName, reflect.Zero(c.target.Type().Elem())) != nil {
+			for c.index = 0; c.index < c.Len(); c.index++ {
+				if identifier(d.TagName, c.Index(c.index)) == field {
+					break
+				}
+			}
+		} else {
+			c.AddError(NewErrorf("invalid index in path. %s is not a number", field).
+				WithCause(err))
+		}
 	}
 	var x reflect.Value
 	if c.Len() > c.index {
 		x = c.Index(c.index)
+	} else if c.change.Type == CREATE && !c.HasFlag(OptionNoCreate) {
+		x = c.NewArrayElement()
 	}
 	if !x.IsValid() {
 		if !c.HasFlag(OptionOmitUnequal) {

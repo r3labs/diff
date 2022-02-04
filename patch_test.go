@@ -15,35 +15,30 @@ func TestPatch(t *testing.T) {
 		Name      string
 		A, B      interface{}
 		Changelog diff.Changelog
-		Error     error
 	}{
 		{
 			"uint-slice-insert", &[]uint{1, 2, 3}, &[]uint{1, 2, 3, 4},
 			diff.Changelog{
 				diff.Change{Type: diff.CREATE, Path: []string{"3"}, To: uint(4)},
 			},
-			nil,
 		},
 		{
 			"int-slice-insert", &[]int{1, 2, 3}, &[]int{1, 2, 3, 4},
 			diff.Changelog{
 				diff.Change{Type: diff.CREATE, Path: []string{"3"}, To: 4},
 			},
-			nil,
 		},
 		{
 			"uint-slice-delete", &[]uint{1, 2, 3}, &[]uint{1, 3},
 			diff.Changelog{
 				diff.Change{Type: diff.DELETE, Path: []string{"1"}, From: uint(2)},
 			},
-			nil,
 		},
 		{
 			"int-slice-delete", &[]int{1, 2, 3}, &[]int{1, 3},
 			diff.Changelog{
 				diff.Change{Type: diff.DELETE, Path: []string{"1"}, From: 2},
 			},
-			nil,
 		},
 		{
 			"uint-slice-insert-delete", &[]uint{1, 2, 3}, &[]uint{1, 3, 4},
@@ -51,7 +46,6 @@ func TestPatch(t *testing.T) {
 				diff.Change{Type: diff.DELETE, Path: []string{"1"}, From: uint(2)},
 				diff.Change{Type: diff.CREATE, Path: []string{"2"}, To: uint(4)},
 			},
-			nil,
 		},
 		{
 			"int-slice-insert-delete", &[]int{1, 2, 3}, &[]int{1, 3, 4},
@@ -59,21 +53,18 @@ func TestPatch(t *testing.T) {
 				diff.Change{Type: diff.DELETE, Path: []string{"1"}, From: 2},
 				diff.Change{Type: diff.CREATE, Path: []string{"2"}, To: 4},
 			},
-			nil,
 		},
 		{
 			"string-slice-insert", &[]string{"1", "2", "3"}, &[]string{"1", "2", "3", "4"},
 			diff.Changelog{
 				diff.Change{Type: diff.CREATE, Path: []string{"3"}, To: "4"},
 			},
-			nil,
 		},
 		{
 			"string-slice-delete", &[]string{"1", "2", "3"}, &[]string{"1", "3"},
 			diff.Changelog{
 				diff.Change{Type: diff.DELETE, Path: []string{"1"}, From: "2"},
 			},
-			nil,
 		},
 		{
 			"string-slice-insert-delete", &[]string{"1", "2", "3"}, &[]string{"1", "3", "4"},
@@ -81,69 +72,59 @@ func TestPatch(t *testing.T) {
 				diff.Change{Type: diff.DELETE, Path: []string{"1"}, From: "2"},
 				diff.Change{Type: diff.CREATE, Path: []string{"2"}, To: "4"},
 			},
-			nil,
 		},
 		{
-			"comparable-slice-update", &[]tistruct{{"one", 1}}, &[]tistruct{{"one", 50}},
+			"comparable-slice-update", &[]tistruct{{"one", 1}, {"two", 2}}, &[]tistruct{{"one", 1}, {"two", 50}},
 			diff.Changelog{
-				diff.Change{Type: diff.UPDATE, Path: []string{"one", "value"}, From: 1, To: 50},
+				diff.Change{Type: diff.UPDATE, Path: []string{"two", "value"}, From: 1, To: 50},
 			},
-			nil,
 		},
 		{
 			"struct-string-update", &tstruct{Name: "one"}, &tstruct{Name: "two"},
 			diff.Changelog{
 				diff.Change{Type: diff.UPDATE, Path: []string{"name"}, From: "one", To: "two"},
 			},
-			nil,
 		},
 		{
 			"struct-int-update", &tstruct{Value: 1}, &tstruct{Value: 50},
 			diff.Changelog{
 				diff.Change{Type: diff.UPDATE, Path: []string{"value"}, From: 1, To: 50},
 			},
-			nil,
 		},
 		{
 			"struct-bool-update", &tstruct{Bool: true}, &tstruct{Bool: false},
 			diff.Changelog{
 				diff.Change{Type: diff.UPDATE, Path: []string{"bool"}, From: true, To: false},
 			},
-			nil,
 		},
 		{
 			"struct-time-update", &tstruct{}, &tstruct{Time: currentTime},
 			diff.Changelog{
 				diff.Change{Type: diff.UPDATE, Path: []string{"time"}, From: time.Time{}, To: currentTime},
 			},
-			nil,
 		},
 		{
 			"struct-nil-string-pointer-update", &tstruct{Pointer: nil}, &tstruct{Pointer: sptr("test")},
 			diff.Changelog{
 				diff.Change{Type: diff.UPDATE, Path: []string{"pointer"}, From: nil, To: sptr("test")},
 			},
-			nil,
 		},
 		{
 			"struct-string-pointer-update-to-nil", &tstruct{Pointer: sptr("test")}, &tstruct{Pointer: nil},
 			diff.Changelog{
 				diff.Change{Type: diff.UPDATE, Path: []string{"pointer"}, From: sptr("test"), To: nil},
 			},
-			nil,
 		}, {
 			"struct-generic-slice-insert", &tstruct{Values: []string{"one"}}, &tstruct{Values: []string{"one", "two"}},
 			diff.Changelog{
 				diff.Change{Type: diff.CREATE, Path: []string{"values", "1"}, From: nil, To: "two"},
 			},
-			nil,
 		},
 		{
 			"struct-generic-slice-delete", &tstruct{Values: []string{"one", "two"}}, &tstruct{Values: []string{"one"}},
 			diff.Changelog{
 				diff.Change{Type: diff.DELETE, Path: []string{"values", "1"}, From: "two", To: nil},
 			},
-			nil,
 		},
 		{
 			"struct-unidentifiable-slice-insert-delete", &tstruct{Unidentifiables: []tuistruct{{1}, {2}, {3}}}, &tstruct{Unidentifiables: []tuistruct{{5}, {2}, {3}, {4}}},
@@ -151,7 +132,6 @@ func TestPatch(t *testing.T) {
 				diff.Change{Type: diff.UPDATE, Path: []string{"unidentifiables", "0", "value"}, From: 1, To: 5},
 				diff.Change{Type: diff.CREATE, Path: []string{"unidentifiables", "3", "value"}, From: nil, To: 4},
 			},
-			nil,
 		},
 		{
 			"slice", &tstruct{}, &tstruct{Nested: tnstruct{Slice: []tmstruct{{"one", 1}, {"two", 2}}}},
@@ -161,14 +141,12 @@ func TestPatch(t *testing.T) {
 				diff.Change{Type: diff.CREATE, Path: []string{"nested", "slice", "1", "foo"}, From: nil, To: "two"},
 				diff.Change{Type: diff.CREATE, Path: []string{"nested", "slice", "1", "bar"}, From: nil, To: 2},
 			},
-			nil,
 		},
 		{
 			"slice-duplicate-items", &[]int{1}, &[]int{1, 1},
 			diff.Changelog{
 				diff.Change{Type: diff.CREATE, Path: []string{"1"}, From: nil, To: 1},
 			},
-			nil,
 		},
 		{
 			"embedded-struct-field",
@@ -179,7 +157,6 @@ func TestPatch(t *testing.T) {
 				diff.Change{Type: diff.UPDATE, Path: []string{"bar"}, From: 2, To: 3},
 				diff.Change{Type: diff.UPDATE, Path: []string{"baz"}, From: true, To: false},
 			},
-			nil,
 		},
 		{
 			"custom-tags",
@@ -189,7 +166,6 @@ func TestPatch(t *testing.T) {
 				diff.Change{Type: diff.UPDATE, Path: []string{"foo"}, From: "abc", To: "def"},
 				diff.Change{Type: diff.UPDATE, Path: []string{"bar"}, From: 3, To: 4},
 			},
-			nil,
 		},
 		{
 			"custom-types",
@@ -199,7 +175,6 @@ func TestPatch(t *testing.T) {
 				diff.Change{Type: diff.UPDATE, Path: []string{"foo"}, From: CustomStringType("a"), To: CustomStringType("b")},
 				diff.Change{Type: diff.UPDATE, Path: []string{"bar"}, From: CustomIntType(1), To: CustomIntType(2)},
 			},
-			nil,
 		},
 		{
 			"map",
@@ -210,7 +185,6 @@ func TestPatch(t *testing.T) {
 				diff.Change{Type: diff.CREATE, Path: []string{"2"}, From: nil, To: "two"},
 				diff.Change{Type: diff.UPDATE, Path: []string{"3"}, From: "three", To: "tres"},
 			},
-			nil,
 		},
 		{
 			"map-nested-create",
@@ -219,7 +193,6 @@ func TestPatch(t *testing.T) {
 			diff.Changelog{
 				diff.Change{Type: "create", Path: []string{"details", "secondary-attributes"}, From: nil, To: map[string]interface{}{"attrA": "A", "attrB": "B"}},
 			},
-			nil,
 		},
 		{
 			"map-nested-update",
@@ -228,7 +201,6 @@ func TestPatch(t *testing.T) {
 			diff.Changelog{
 				diff.Change{Type: "update", Path: []string{"details", "attributes"}, From: map[string]interface{}{"attrA": "A", "attrB": "B"}, To: map[string]interface{}{"attrA": "C", "attrD": "X"}},
 			},
-			nil,
 		},
 		{
 			"map-nested-delete",
@@ -237,7 +209,6 @@ func TestPatch(t *testing.T) {
 			diff.Changelog{
 				diff.Change{Type: "delete", Path: []string{"details", "attributes"}, From: map[string]interface{}{"attrA": "A", "attrB": "B"}, To: nil},
 			},
-			nil,
 		},
 	}
 
@@ -261,6 +232,7 @@ func TestPatch(t *testing.T) {
 
 			assert.Equal(t, tc.B, tc.A)
 			require.Equal(t, len(tc.Changelog), len(pl))
+			assert.False(t, pl.HasErrors())
 		})
 	}
 
