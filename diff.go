@@ -227,6 +227,10 @@ func tagName(tag string, f reflect.StructField) string {
 }
 
 func identifier(tag string, v reflect.Value) interface{} {
+	if v.Kind() != reflect.Struct {
+		return nil
+	}
+
 	for i := 0; i < v.NumField(); i++ {
 		if hasTagOption(tag, v.Type().Field(i), "identifier") {
 			return v.Field(i).Interface()

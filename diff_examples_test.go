@@ -312,7 +312,7 @@ func ExampleComplexSlicePatch() {
 
 	fmt.Printf("Patched %d entries and encountered %d errors", len(patchLog), patchLog.ErrorCount())
 
-	//Output: Patched 7 entries and encountered 4 errors
+	//Output: Patched 7 entries and encountered 3 errors
 }
 
 //ExampleComplexMapPatch demonstrates how to use the Patch function for complex slices.
