@@ -108,6 +108,19 @@ func StructValues(t string, path []string, s interface{}) (Changelog, error) {
 	return d.cl, d.structValues(t, path, v)
 }
 
+// FilterOut filter out the changes based on path. Paths may contain valid regexp to match items
+func (cl *Changelog) FilterOut(path []string) Changelog {
+	var ncl Changelog
+
+	for _, c := range *cl {
+		if !pathmatch(path, c.Path) {
+			ncl = append(ncl, c)
+		}
+	}
+
+	return ncl
+}
+
 // Filter filter changes based on path. Paths may contain valid regexp to match items
 func (cl *Changelog) Filter(path []string) Changelog {
 	var ncl Changelog
