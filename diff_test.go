@@ -758,6 +758,32 @@ func TestFilter(t *testing.T) {
 	}
 }
 
+func TestFilterOut(t *testing.T) {
+	cases := []struct {
+		Name     string
+		Filter   []string
+		Expected [][]string
+	}{
+		{"simple", []string{"item-1", "subitem"}, [][]string{{"item-2", "subitem"}}},
+		{"regex", []string{"item-*"}, [][]string{}},
+	}
+
+	cl := diff.Changelog{
+		{Path: []string{"item-1", "subitem"}},
+		{Path: []string{"item-2", "subitem"}},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.Name, func(t *testing.T) {
+			ncl := cl.FilterOut(tc.Filter)
+			assert.Len(t, ncl, len(tc.Expected))
+			for i, e := range tc.Expected {
+				assert.Equal(t, e, ncl[i].Path)
+			}
+		})
+	}
+}
+
 func TestStructValues(t *testing.T) {
 	cases := []struct {
 		Name       string
