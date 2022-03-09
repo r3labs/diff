@@ -18,7 +18,7 @@ func (d *Differ) diffPtr(path []string, a, b reflect.Value, parent interface{}) 
 				return d.diff(path, reflect.ValueOf(nil), reflect.Indirect(b), parent)
 			}
 
-			d.cl.Add(CREATE, path, nil, exportInterface(b), parent)
+			d.Add(CREATE, path, nil, exportInterface(b), parent)
 			return nil
 		}
 
@@ -27,7 +27,7 @@ func (d *Differ) diffPtr(path []string, a, b reflect.Value, parent interface{}) 
 				return d.diff(path, reflect.Indirect(a), reflect.ValueOf(nil), parent)
 			}
 
-			d.cl.Add(DELETE, path, exportInterface(a), nil, parent)
+			d.Add(DELETE, path, exportInterface(a), nil, parent)
 			return nil
 		}
 
@@ -39,12 +39,12 @@ func (d *Differ) diffPtr(path []string, a, b reflect.Value, parent interface{}) 
 	}
 
 	if a.IsNil() {
-		d.cl.Add(UPDATE, path, nil, exportInterface(b), parent)
+		d.Add(UPDATE, path, nil, exportInterface(b), parent)
 		return nil
 	}
 
 	if b.IsNil() {
-		d.cl.Add(UPDATE, path, exportInterface(a), nil, parent)
+		d.Add(UPDATE, path, exportInterface(a), nil, parent)
 		return nil
 	}
 

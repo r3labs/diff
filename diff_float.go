@@ -10,12 +10,12 @@ import (
 
 func (d *Differ) diffFloat(path []string, a, b reflect.Value, parent interface{}) error {
 	if a.Kind() == reflect.Invalid {
-		d.cl.Add(CREATE, path, nil, exportInterface(b))
+		d.Add(CREATE, path, nil, exportInterface(b))
 		return nil
 	}
 
 	if b.Kind() == reflect.Invalid {
-		d.cl.Add(DELETE, path, exportInterface(a), nil)
+		d.Add(DELETE, path, exportInterface(a), nil)
 		return nil
 	}
 
@@ -25,9 +25,9 @@ func (d *Differ) diffFloat(path []string, a, b reflect.Value, parent interface{}
 
 	if a.Float() != b.Float() {
 		if a.CanInterface() {
-			d.cl.Add(UPDATE, path, exportInterface(a), exportInterface(b), parent)
+			d.Add(UPDATE, path, exportInterface(a), exportInterface(b), parent)
 		} else {
-			d.cl.Add(UPDATE, path, a.Float(), b.Float(), parent)
+			d.Add(UPDATE, path, a.Float(), b.Float(), parent)
 		}
 	}
 

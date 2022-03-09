@@ -30,6 +30,8 @@ type Differ struct {
 	DisableStructValues    bool
 	customValueDiffers     []ValueDiffer
 	cl                     Changelog
+	orig1                  interface{}
+	orig2                  interface{}
 	AllowTypeMismatch      bool
 	DiscardParent          bool
 	StructMapKeys          bool
@@ -43,11 +45,13 @@ type Changelog []Change
 
 // Change stores information about a changed item
 type Change struct {
-	Type   string      `json:"type"`
-	Path   []string    `json:"path"`
-	From   interface{} `json:"from"`
-	To     interface{} `json:"to"`
-	parent interface{} `json:"parent"`
+	Type         string      `json:"type"`
+	Path         []string    `json:"path"`
+	From         interface{} `json:"from"`
+	To           interface{} `json:"to"`
+	parent       interface{}
+	OriginalFrom interface{} `json:"originalFrom"`
+	OriginalTo   interface{} `json:"originalTo"`
 }
 
 // ValueDiffer is an interface for custom differs
@@ -138,13 +142,15 @@ func (cl *Changelog) Filter(path []string) Changelog {
 func (d *Differ) Diff(a, b interface{}) (Changelog, error) {
 	// reset the state of the diff
 	d.cl = Changelog{}
+	d.orig1 = a
+	d.orig2 = b
 
 	return d.cl, d.diff([]string{}, reflect.ValueOf(a), reflect.ValueOf(b), nil)
 }
 
 func (d *Differ) diff(path []string, a, b reflect.Value, parent interface{}) error {
 
-	//look and see if we need to discard the parent
+	// look and see if we need to discard the parent
 	if parent != nil {
 		if d.DiscardParent || reflect.TypeOf(parent).Kind() != reflect.Struct {
 			parent = nil
@@ -154,7 +160,7 @@ func (d *Differ) diff(path []string, a, b reflect.Value, parent interface{}) err
 	// check if types match or are
 	if invalid(a, b) {
 		if d.AllowTypeMismatch {
-			d.cl.Add(UPDATE, path, a.Interface(), b.Interface())
+			d.Add(UPDATE, path, a.Interface(), b.Interface())
 			return nil
 		}
 		return ErrTypeMismatch
@@ -202,7 +208,21 @@ func (d *Differ) diff(path []string, a, b reflect.Value, parent interface{}) err
 	}
 }
 
+func (d *Differ) Add(t string, path []string, ftco ...interface{}) {
+	for i := 0; i < 3-len(ftco); i++ {
+		ftco = append(ftco, nil)
+	}
+	ftco = append(ftco, d.orig1)
+	ftco = append(ftco, d.orig2)
+	d.cl.Add(t, path, ftco...)
+}
+
 func (cl *Changelog) Add(t string, path []string, ftco ...interface{}) {
+	// 0 From
+	// 1 To
+	// 2 Parent
+	// 3 Original From
+	// 4 Original To
 	change := Change{
 		Type: t,
 		Path: path,
@@ -212,7 +232,13 @@ func (cl *Changelog) Add(t string, path []string, ftco ...interface{}) {
 	if len(ftco) > 2 {
 		change.parent = ftco[2]
 	}
-	(*cl) = append((*cl), change)
+	if len(ftco) > 3 {
+		change.OriginalFrom = ftco[3]
+	}
+	if len(ftco) > 4 {
+		change.OriginalTo = ftco[4]
+	}
+	*cl = append(*cl, change)
 }
 
 func tagName(tag string, f reflect.StructField) string {
@@ -257,8 +283,10 @@ func hasTagOption(tag string, f reflect.StructField, opt string) bool {
 
 func swapChange(t string, c Change) Change {
 	nc := Change{
-		Type: t,
-		Path: c.Path,
+		Type:         t,
+		Path:         c.Path,
+		OriginalFrom: c.OriginalFrom,
+		OriginalTo:   c.OriginalTo,
 	}
 
 	switch t {

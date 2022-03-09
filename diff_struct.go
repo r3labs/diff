@@ -16,7 +16,7 @@ func (d *Differ) diffStruct(path []string, a, b reflect.Value) error {
 
 	if a.Kind() == reflect.Invalid {
 		if d.DisableStructValues {
-			d.cl.Add(CREATE, path, nil, exportInterface(b))
+			d.Add(CREATE, path, nil, exportInterface(b))
 			return nil
 		}
 		return d.structValues(CREATE, path, b)
@@ -24,7 +24,7 @@ func (d *Differ) diffStruct(path []string, a, b reflect.Value) error {
 
 	if b.Kind() == reflect.Invalid {
 		if d.DisableStructValues {
-			d.cl.Add(DELETE, path, exportInterface(a), nil)
+			d.Add(DELETE, path, exportInterface(a), nil)
 			return nil
 		}
 		return d.structValues(DELETE, path, a)
@@ -70,6 +70,8 @@ func (d *Differ) diffStruct(path []string, a, b reflect.Value) error {
 
 func (d *Differ) structValues(t string, path []string, a reflect.Value) error {
 	var nd Differ
+	nd.orig1 = d.orig1
+	nd.orig2 = d.orig2
 	nd.Filter = d.Filter
 	nd.customValueDiffers = d.customValueDiffers
 

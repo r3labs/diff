@@ -10,12 +10,12 @@ import (
 
 func (d *Differ) diffSlice(path []string, a, b reflect.Value) error {
 	if a.Kind() == reflect.Invalid {
-		d.cl.Add(CREATE, path, nil, exportInterface(b))
+		d.Add(CREATE, path, nil, exportInterface(b))
 		return nil
 	}
 
 	if b.Kind() == reflect.Invalid {
-		d.cl.Add(DELETE, path, exportInterface(a), nil)
+		d.Add(DELETE, path, exportInterface(a), nil)
 		return nil
 	}
 

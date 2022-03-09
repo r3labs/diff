@@ -11,12 +11,12 @@ import (
 
 func (d *Differ) diffTime(path []string, a, b reflect.Value) error {
 	if a.Kind() == reflect.Invalid {
-		d.cl.Add(CREATE, path, nil, exportInterface(b))
+		d.Add(CREATE, path, nil, exportInterface(b))
 		return nil
 	}
 
 	if b.Kind() == reflect.Invalid {
-		d.cl.Add(DELETE, path, exportInterface(a), nil)
+		d.Add(DELETE, path, exportInterface(a), nil)
 		return nil
 	}
 
@@ -29,7 +29,7 @@ func (d *Differ) diffTime(path []string, a, b reflect.Value) error {
 	bu := exportInterface(b).(time.Time).UnixNano()
 
 	if au != bu {
-		d.cl.Add(UPDATE, path, exportInterface(a), exportInterface(b))
+		d.Add(UPDATE, path, exportInterface(a), exportInterface(b))
 	}
 
 	return nil

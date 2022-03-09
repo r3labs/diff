@@ -634,6 +634,8 @@ func TestDiff(t *testing.T) {
 				assert.Equal(t, tc.Changelog[i].Path, c.Path)
 				assert.Equal(t, tc.Changelog[i].From, c.From)
 				assert.Equal(t, tc.Changelog[i].To, c.To)
+				assert.Equal(t, c.OriginalFrom, tc.A)
+				assert.Equal(t, c.OriginalTo, tc.B)
 			}
 		})
 	}
