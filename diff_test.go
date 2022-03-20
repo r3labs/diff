@@ -610,6 +610,13 @@ func TestDiff(t *testing.T) {
 			},
 			nil,
 		},
+		{
+			"slice-of-struct-with-slice",
+			[]tnstruct{{[]tmstruct{struct1, struct2}}, {[]tmstruct{struct2, struct2}}},
+			[]tnstruct{{[]tmstruct{struct2, struct2}}, {[]tmstruct{struct2, struct1}}},
+			diff.Changelog{},
+			nil,
+		},
 	}
 
 	for _, tc := range cases {
