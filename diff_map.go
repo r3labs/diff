@@ -11,7 +11,7 @@ import (
 	"github.com/vmihailenco/msgpack"
 )
 
-func (d *Differ) diffMap(path []string, a, b reflect.Value) error {
+func (d *Differ) diffMap(path []string, a, b reflect.Value, parent interface{}) error {
 	if a.Kind() == reflect.Invalid {
 		return d.mapValues(CREATE, path, b)
 	}

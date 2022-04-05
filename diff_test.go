@@ -6,6 +6,7 @@ package diff_test
 
 import (
 	"reflect"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -907,7 +908,7 @@ func (o *testTypeDiffer) InsertParentDiffer(dfunc func(path []string, a, b refle
 func (o *testTypeDiffer) Match(a, b reflect.Value) bool {
 	return diff.AreType(a, b, reflect.TypeOf(testType("")))
 }
-func (o *testTypeDiffer) Diff(cl *diff.Changelog, path []string, a, b reflect.Value) error {
+func (o *testTypeDiffer) Diff(dt diff.DiffType, df diff.DiffFunc, cl *diff.Changelog, path []string, a, b reflect.Value, parent interface{}) error {
 	if a.String() != "custom" && b.String() != "match" {
 		cl.Add(diff.UPDATE, path, a.Interface(), b.Interface())
 	}
@@ -944,6 +945,54 @@ func TestCustomDiffer(t *testing.T) {
 	assert.Len(t, cl, 1)
 }
 
+type testStringInterceptorDiffer struct {
+	DiffFunc (func(path []string, a, b reflect.Value, p interface{}) error)
+}
+
+func (o *testStringInterceptorDiffer) InsertParentDiffer(dfunc func(path []string, a, b reflect.Value, p interface{}) error) {
+	o.DiffFunc = dfunc
+}
+
+func (o *testStringInterceptorDiffer) Match(a, b reflect.Value) bool {
+	return diff.AreType(a, b, reflect.TypeOf(testType("")))
+}
+func (o *testStringInterceptorDiffer) Diff(dt diff.DiffType, df diff.DiffFunc, cl *diff.Changelog, path []string, a, b reflect.Value, parent interface{}) error {
+	if dt.String() == "STRING" {
+		// intercept the data
+		aValue, aOk := a.Interface().(testType)
+		bValue, bOk := b.Interface().(testType)
+
+		if aOk && bOk {
+			if aValue == "avalue" {
+				aValue = testType(strings.ToUpper(string(aValue)))
+				a = reflect.ValueOf(aValue)
+			}
+
+			if bValue == "bvalue" {
+				bValue = testType(strings.ToUpper(string(aValue)))
+				b = reflect.ValueOf(bValue)
+			}
+		}
+	}
+
+	// continue the diff logic passing the updated a/b values
+	return df(path, a, b, parent)
+}
+
+func TestStringInterceptorDiffer(t *testing.T) {
+	d, err := diff.NewDiffer(
+		diff.CustomValueDiffers(
+			&testStringInterceptorDiffer{},
+		),
+	)
+	require.Nil(t, err)
+
+	cl, err := d.Diff(testType("avalue"), testType("bvalue"))
+	require.Nil(t, err)
+
+	assert.Len(t, cl, 0)
+}
+
 type RecursiveTestStruct struct {
 	Id       int
 	Children []RecursiveTestStruct
@@ -961,7 +1010,7 @@ func (o *recursiveTestStructDiffer) Match(a, b reflect.Value) bool {
 	return diff.AreType(a, b, reflect.TypeOf(RecursiveTestStruct{}))
 }
 
-func (o *recursiveTestStructDiffer) Diff(cl *diff.Changelog, path []string, a, b reflect.Value) error {
+func (o *recursiveTestStructDiffer) Diff(dt diff.DiffType, df diff.DiffFunc, cl *diff.Changelog, path []string, a, b reflect.Value, parent interface{}) error {
 	if a.Kind() == reflect.Invalid {
 		cl.Add(diff.CREATE, path, nil, b.Interface())
 		return nil
