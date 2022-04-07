@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/r3labs/diff/v2"
+	"github.com/r3labs/diff/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

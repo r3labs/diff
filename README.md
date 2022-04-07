@@ -4,13 +4,13 @@ A library for diffing golang structures and values.
 
 Utilizing field tags and reflection, it is able to compare two structures of the same type and create a changelog of all modified values. The produced changelog can easily be serialized to json.
 
-NOTE: All active development now takes place on the v2 branch.
+NOTE: All active development now takes place on the v3 branch.
 
 ## Installation
 
-For version 2:
+For version 3:
 ```
-go get github.com/r3labs/diff/v2
+go get github.com/r3labs/diff/v3
 ```
 
 ## Changelog Format
@@ -84,7 +84,7 @@ In order for struct fields to be compared, they must be tagged with a given name
 Diffing a basic set of values can be accomplished using the diff functions. Any items that specify a "diff" tag using a name will be compared.
 
 ```go
-import "github.com/r3labs/diff/v2"
+import "github.com/r3labs/diff/v3"
 
 type Order struct {
     ID    string `diff:"id"`
@@ -125,7 +125,7 @@ When marshalling the changelog to json, the output will look like:
 
 Options can be set on the differ at call time which effect how diff acts when building the change log.
 ```go
-import "github.com/r3labs/diff/v2"
+import "github.com/r3labs/diff/v3"
 
 type Order struct {
     ID    string `diff:"id"`
@@ -151,7 +151,7 @@ func main() {
 You can also create a new instance of a differ that allows options to be set.
 
 ```go
-import "github.com/r3labs/diff/v2"
+import "github.com/r3labs/diff/v3"
 
 type Order struct {
     ID    string `diff:"id"`
@@ -205,7 +205,7 @@ To accommodate this patch keeps track of each change log option it attempts to a
 happened for further scrutiny.
 
 ```go
-import "github.com/r3labs/diff/v2"
+import "github.com/r3labs/diff/v3"
 
 type Order struct {
     ID    string `diff:"id"`
@@ -239,7 +239,7 @@ Instances of differ with options set can also be used when patching.
 ```go
 package main
 
-import "github.com/r3labs/diff/v2"
+import "github.com/r3labs/diff/v3"
 
 type Order struct {
 	ID    string `json:"id"`
@@ -271,7 +271,7 @@ As a convenience, there is a Merge function that allows one to take three interf
 time.
 
 ```go
-import "github.com/r3labs/diff/v2"
+import "github.com/r3labs/diff/v3"
 
 type Order struct {
     ID    string `diff:"id"`
