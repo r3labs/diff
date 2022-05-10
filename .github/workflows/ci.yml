@@ -3,7 +3,7 @@ name: CI
 on: [push, workflow_dispatch]
 
 jobs:
-  test:
+  Test:
     runs-on: ubuntu-latest
 
     container:
