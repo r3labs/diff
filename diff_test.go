@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/r3labs/diff/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/zajko/diff/v3"
 )
 
 var currentTime = time.Now()

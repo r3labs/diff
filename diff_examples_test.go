@@ -5,7 +5,7 @@ import (
 	"math/big"
 	"reflect"
 
-	"github.com/r3labs/diff/v3"
+	"github.com/zajko/diff/v3"
 )
 
 //Try to do a bunch of stuff that will result in some or all failures
