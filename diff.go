@@ -73,8 +73,6 @@ func (t DiffType) String() string {
 // DiffFunc represents the built-in diff functions
 type DiffFunc func([]string, reflect.Value, reflect.Value, interface{}) error
 
-type ChangeFunc func(reflect.Value, reflect.Value, interface{}) (bool, error)
-
 // Differ a configurable diff instance
 type Differ struct {
 	TagName                string
@@ -110,12 +108,9 @@ type ValueDiffer interface {
 }
 
 // Changed returns true if both values differ
-func Changed(a, b interface{}, opts ...func(d *Differ) error) (bool, error) {
-	d, err := NewDiffer(opts...)
-	if err != nil {
-		return false, err
-	}
-	return d.Changed(a, b)
+func Changed(a, b interface{}) bool {
+	cl, _ := Diff(a, b)
+	return len(cl) > 0
 }
 
 // Diff returns a changelog of all mutated values from both
@@ -218,22 +213,12 @@ func (d *Differ) getDiffType(a, b reflect.Value) (DiffType, DiffFunc) {
 	}
 }
 
-// Returns true if input structs are different, false otherwise
-func (d *Differ) Changed(a, b interface{}) (bool, error) {
-	d.cl = Changelog{}
-	return d.changed(reflect.ValueOf(a), reflect.ValueOf(b), nil)
-}
-
 // Diff returns a changelog of all mutated values from both
 func (d *Differ) Diff(a, b interface{}) (Changelog, error) {
 	// reset the state of the diff
 	d.cl = Changelog{}
 
 	return d.cl, d.diff([]string{}, reflect.ValueOf(a), reflect.ValueOf(b), nil)
-}
-
-func (d *Differ) changed(a, b reflect.Value, parent interface{}) (bool, error) {
-	return false, nil
 }
 
 func (d *Differ) diff(path []string, a, b reflect.Value, parent interface{}) error {
