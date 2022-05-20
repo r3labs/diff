@@ -26,6 +26,14 @@ type tistruct struct {
 	Value int    `diff:"value"`
 }
 
+type nestedstruct struct {
+	Somestruct `diff:"tistruct,nestedIdentifier"`
+}
+
+type Somestruct struct {
+	Name  string `diff:"name,identifier"`
+	Value int    `diff:"value"`
+}
 type tuistruct struct {
 	Value int `diff:"value"`
 }
@@ -1144,6 +1152,62 @@ func TestHandleDifferentTypes(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestNestedIdentifier_Equal(t *testing.T) {
+	a := nestedstruct{
+		Somestruct{
+			Name:  "abc",
+			Value: 100,
+		},
+	}
+	b := nestedstruct{
+		Somestruct{
+			Name:  "abc2",
+			Value: 101,
+		},
+	}
+	d, err := diff.NewDiffer()
+	require.Nil(t, err)
+	slice1 := []nestedstruct{a, b}
+	slice2 := []nestedstruct{b, a}
+	cl, err := d.Diff(slice1, slice2)
+	require.Nil(t, err)
+	require.Empty(t, cl)
+}
+
+func TestNestedIdentifier_FindsAppropriateChanges(t *testing.T) {
+	a := nestedstruct{
+		Somestruct{
+			Name:  "abc",
+			Value: 100,
+		},
+	}
+	b := nestedstruct{
+		Somestruct{
+			Name:  "abc2",
+			Value: 101,
+		},
+	}
+	a2 := nestedstruct{
+		Somestruct{
+			Name:  "abc",
+			Value: 103,
+		},
+	}
+	b2 := nestedstruct{
+		Somestruct{
+			Name:  "abc2",
+			Value: 104,
+		},
+	}
+	d, err := diff.NewDiffer()
+	require.Nil(t, err)
+	slice1 := []nestedstruct{a, b}
+	slice2 := []nestedstruct{b2, a2}
+	cl, err := d.Diff(slice1, slice2)
+	require.Nil(t, err)
+	require.Equal(t, len(cl), 2)
 }
 
 func copyAppend(src []string, elems ...string) []string {

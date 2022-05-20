@@ -293,16 +293,28 @@ func identifier(tag string, v reflect.Value) interface{} {
 	}
 
 	for i := 0; i < v.NumField(); i++ {
-		if hasTagOption(tag, v.Type().Field(i), "identifier") {
+		parts := strings.Split(v.Type().Field(i).Tag.Get(tag), ",")
+		if partsHaveTagOption(parts, "identifier") {
 			return v.Field(i).Interface()
+		}
+		if partsHaveTagOption(parts, "nestedIdentifier") {
+			field := v.Field(i)
+			if field.CanInterface() {
+				possiblyNested := field.Interface()
+				if possiblyNested != nil {
+					foundNestedIdentifier := identifier(tag, reflect.ValueOf(possiblyNested))
+					if foundNestedIdentifier != nil {
+						return foundNestedIdentifier
+					}
+				}
+			}
 		}
 	}
 
 	return nil
 }
 
-func hasTagOption(tag string, f reflect.StructField, opt string) bool {
-	parts := strings.Split(f.Tag.Get(tag), ",")
+func partsHaveTagOption(parts []string, opt string) bool {
 	if len(parts) < 2 {
 		return false
 	}
@@ -314,6 +326,11 @@ func hasTagOption(tag string, f reflect.StructField, opt string) bool {
 	}
 
 	return false
+}
+
+func hasTagOption(tag string, f reflect.StructField, opt string) bool {
+	parts := strings.Split(f.Tag.Get(tag), ",")
+	return partsHaveTagOption(parts, opt)
 }
 
 func swapChange(t string, c Change) Change {
