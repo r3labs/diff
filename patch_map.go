@@ -4,10 +4,10 @@ import (
 	"errors"
 	"reflect"
 
-	"github.com/vmihailenco/msgpack"
+	"github.com/vmihailenco/msgpack/v5"
 )
 
-//renderMap - handle map rendering for patch
+// renderMap - handle map rendering for patch
 func (d *Differ) renderMap(c *ChangeValue) (m, k, v *reflect.Value) {
 	//we must tease out the type of the key, we use the msgpack from diff to recreate the key
 	kt := c.target.Type().Key()
@@ -68,8 +68,9 @@ func (d *Differ) renderMap(c *ChangeValue) (m, k, v *reflect.Value) {
 }
 
 // updateMapEntry - deletes are special, they are handled differently based on options
-//            container type etc. We have to have special handling for each
-//            type. Set values are more generic even if they must be instanced
+//
+//	container type etc. We have to have special handling for each
+//	type. Set values are more generic even if they must be instanced
 func (d *Differ) updateMapEntry(c *ChangeValue, m, k, v *reflect.Value) {
 	if k == nil || m == nil {
 		return
