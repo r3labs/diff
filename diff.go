@@ -88,6 +88,21 @@ type Differ struct {
 	Filter                 FilterFunc
 }
 
+func (d *Differ) Clone() Differ {
+	return Differ{
+		TagName:                d.TagName,
+		SliceOrdering:          d.SliceOrdering,
+		DisableStructValues:    d.DisableStructValues,
+		customValueDiffers:     d.customValueDiffers,
+		AllowTypeMismatch:      d.AllowTypeMismatch,
+		DiscardParent:          d.DiscardParent,
+		StructMapKeys:          d.StructMapKeys,
+		FlattenEmbeddedStructs: d.FlattenEmbeddedStructs,
+		ConvertCompatibleTypes: d.ConvertCompatibleTypes,
+		Filter:                 d.Filter,
+	}
+}
+
 // Changelog stores a list of changed items
 type Changelog []Change
 

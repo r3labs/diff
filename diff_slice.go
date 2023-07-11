@@ -101,9 +101,7 @@ func (st *sliceTracker) has(s, v reflect.Value, d *Differ) bool {
 
 		x := s.Index(i)
 
-		var nd Differ
-		nd.Filter = d.Filter
-		nd.customValueDiffers = d.customValueDiffers
+		nd := d.Clone()
 
 		err := nd.diff([]string{}, x, v, nil)
 		if err != nil {

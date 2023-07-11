@@ -1146,6 +1146,84 @@ func TestHandleDifferentTypes(t *testing.T) {
 	}
 }
 
+func TestNestedSlicesAndStructsKeepingOptionsToProduceProperPathResult(t *testing.T) {
+
+	type Tag struct {
+		Value string `diff:"value"`
+	}
+
+	type Vitamin struct {
+		Name string `diff:"name"`
+		Tags []Tag  `diff:"tags"`
+	}
+
+	type Nutrient struct {
+		Name     string    `diff:"name"`
+		Vitamins []Vitamin `diff:"vitamins"`
+	}
+
+	type Fruit struct {
+		Name      string     `diff:"name"`
+		Nutrients []Nutrient `diff:"nutrients"`
+	}
+
+	a := Fruit{
+		Name: "Green Apple",
+		Nutrients: []Nutrient{
+			{
+				Name: "Vitamin A",
+				Vitamins: []Vitamin{
+					{
+						Name: "A1",
+						Tags: []Tag{
+							{
+								Value: "a1",
+							},
+						},
+					},
+					{
+						Name: "B1",
+						Tags: []Tag{
+							{
+								Value: "b1",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	b := Fruit{
+		Name: "Green Apple",
+		Nutrients: []Nutrient{
+			{
+				Name: "Vitamin A",
+				Vitamins: []Vitamin{
+					{
+						Name: "A1",
+						Tags: []Tag{
+							{
+								Value: "a1",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	d, err := diff.NewDiffer()
+	require.Nil(t, err)
+
+	cl, err := d.Diff(a, b)
+	require.Nil(t, err)
+
+	assert.Len(t, cl, 2)
+	assert.Equal(t, []string{"nutrients", "0", "vitamins", "1", "name"}, cl[0].Path)
+	assert.Equal(t, []string{"nutrients", "0", "vitamins", "1", "tags", "0", "value"}, cl[1].Path)
+}
+
 func copyAppend(src []string, elems ...string) []string {
 	dst := make([]string, len(src)+len(elems))
 	copy(dst, src)
