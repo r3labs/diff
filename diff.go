@@ -86,6 +86,7 @@ type Differ struct {
 	FlattenEmbeddedStructs bool
 	ConvertCompatibleTypes bool
 	Filter                 FilterFunc
+	pointersSeen           map[uintptr]map[uintptr]struct{}
 }
 
 // Changelog stores a list of changed items
@@ -127,6 +128,7 @@ func NewDiffer(opts ...func(d *Differ) error) (*Differ, error) {
 	d := Differ{
 		TagName:       "diff",
 		DiscardParent: false,
+		pointersSeen:  make(map[uintptr]map[uintptr]struct{}),
 	}
 
 	for _, opt := range opts {
@@ -222,7 +224,6 @@ func (d *Differ) Diff(a, b interface{}) (Changelog, error) {
 }
 
 func (d *Differ) diff(path []string, a, b reflect.Value, parent interface{}) error {
-
 	//look and see if we need to discard the parent
 	if parent != nil {
 		if d.DiscardParent || reflect.TypeOf(parent).Kind() != reflect.Struct {

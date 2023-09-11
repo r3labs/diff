@@ -104,6 +104,7 @@ func (st *sliceTracker) has(s, v reflect.Value, d *Differ) bool {
 		var nd Differ
 		nd.Filter = d.Filter
 		nd.customValueDiffers = d.customValueDiffers
+		nd.pointersSeen = d.pointersSeen
 
 		err := nd.diff([]string{}, x, v, nil)
 		if err != nil {
