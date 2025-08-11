@@ -618,6 +618,20 @@ func TestDiff(t *testing.T) {
 			diff.Changelog{},
 			nil,
 		},
+		{
+			"map-empty-struct-value",
+			map[string]struct{}{
+				"one": {},
+			},
+			map[string]struct{}{
+				"two": {},
+			},
+			diff.Changelog{
+				diff.Change{Type: diff.DELETE, Path: []string{"one"}, From: struct{}{}, To: nil},
+				diff.Change{Type: diff.CREATE, Path: []string{"two"}, From: nil, To: struct{}{}},
+			},
+			nil,
+		},
 	}
 
 	for _, tc := range cases {

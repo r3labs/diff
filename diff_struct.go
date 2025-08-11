@@ -85,6 +85,20 @@ func (d *Differ) structValues(t string, path []string, a reflect.Value) error {
 		return ErrTypeMismatch
 	}
 
+	// empty struct
+	// add to changelog and return
+	if a.NumField() == 0 {
+		var from, to interface{}
+
+		from, to = nil, exportInterface(a)
+		if t == DELETE {
+			from, to = to, nil
+		}
+
+		d.cl.Add(t, path, from, to)
+		return nil
+	}
+
 	x := reflect.New(a.Type()).Elem()
 
 	for i := 0; i < a.NumField(); i++ {
