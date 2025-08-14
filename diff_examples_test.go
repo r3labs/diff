@@ -8,10 +8,9 @@ import (
 	"github.com/r3labs/diff/v3"
 )
 
-//Try to do a bunch of stuff that will result in some or all failures
-//when trying to apply either a valid or invalid changelog
-func ExamplePatchWithErrors() {
-
+// Try to do a bunch of stuff that will result in some or all failures
+// when trying to apply either a valid or invalid changelog
+func ExamplePatch_withErrors() {
 	type Fruit struct {
 		ID        int            `diff:"ID" json:"Identifier"`
 		Name      string         `diff:"name"`
@@ -75,19 +74,19 @@ func ExamplePatchWithErrors() {
 		panic(err)
 	}
 
-	//This fails in total because c is not assignable (passed by Value)
+	// This fails in total because c is not assignable (passed by Value)
 	patchLog := diff.Patch(changelog, c)
 
-	//this also demonstrated the nested errors with 'next'
+	// this also demonstrated the nested errors with 'next'
 
 	errors := patchLog[0].Errors.(*diff.DiffError)
 
-	//we can also continue to nest errors if we like
+	// we can also continue to nest errors if we like
 	message := errors.WithCause(diff.NewError("This is a custom message")).
 		WithCause(fmt.Errorf("this is an error from somewhere else but still compatible")).
 		Error()
 
-	//invoke a few failures, i.e. bad changelog
+	// invoke a few failures, i.e. bad changelog
 	changelog[2].Path[1] = "bad index"
 	changelog[3].Path[0] = "bad struct field"
 
@@ -97,19 +96,19 @@ func ExamplePatchWithErrors() {
 
 	patchLog, _ = diff.Merge(a, d, &c)
 
-	//try patching a string
+	// try patching a string
 	patchLog = diff.Patch(changelog, message)
 
-	//test an invalid change Value
+	// test an invalid change Value
 	var bad *diff.ChangeValue
 	if bad.IsValid() {
 		fmt.Print("this should never happen")
 	}
 
-	//Output:
+	// Output:
 }
 
-//ExampleMerge demonstrates how to use the Merge function
+// ExampleMerge demonstrates how to use the Merge function
 func ExampleMerge() {
 	type Fruit struct {
 		ID        int            `diff:"ID" json:"Identifier"`
@@ -159,18 +158,18 @@ func ExampleMerge() {
 	c.Labels["likes"] = 21
 	c.Labels["colors"] = 42
 
-	//the only error that can happen here comes from the diff step
+	// the only error that can happen here comes from the diff step
 	patchLog, _ := diff.Merge(a, b, &c)
 
-	//Note that unlike our patch version we've not included 'create' in the
-	//tag for nutrients. This will omit "vitamin e" from ending up in c
+	// Note that unlike our patch version we've not included 'create' in the
+	// tag for nutrients. This will omit "vitamin e" from ending up in c
 	fmt.Printf("%#v", len(patchLog))
 
-	//Output: 8
+	// Output: 8
 }
 
-//ExamplePrimitiveSlice demonstrates working with arrays and primitive values
-func ExamplePrimitiveSlice() {
+// Example_primitiveSlice demonstrates working with arrays and primitive values
+func Example_primitiveSlice() {
 	sla := []string{
 		"this",
 		"is",
@@ -196,7 +195,7 @@ func ExamplePrimitiveSlice() {
 	}
 	cl := diff.Patch(patch, &slc)
 
-	//now the other way, round
+	// now the other way, round
 	sla = []string{
 		"slice",
 		"That",
@@ -217,7 +216,7 @@ func ExamplePrimitiveSlice() {
 	}
 	cl = diff.Patch(patch, &slc)
 
-	//and finally a clean view
+	// and finally a clean view
 	sla = []string{
 		"slice",
 		"That",
@@ -235,27 +234,28 @@ func ExamplePrimitiveSlice() {
 
 	fmt.Printf("%d changes made to string array; %v", len(cl), slc)
 
-	//Output: 5 changes made to string array; [simple a]
+	// Output: 5 changes made to string array; [simple a]
 }
 
-//ExampleComplexMapPatch demonstrates how to use the Patch function for complex slices
-//NOTE: There is a potential pitfall here, take a close look at b[2]. If patching the
-//      original, the operation will work intuitively however, in a merge situation we
-//      may not get everything we expect because it's a true diff between a and b and
-//      the diff log will not contain enough information to fully recreate b from an
-//      empty slice. This is exemplified in that the test "colors" is dropped in element
-//      3 of c. Change "colors" to "color" and see what happens. Keep in mind this only
-//      happens when we need to allocate a new complex element. In normal operations we
-//      fix for this by keeping a copy of said element in the diff log (as parent) and
-//      allocate such an element as a whole copy prior to applying any updates?
+// ExamplePatch_complexSlice demonstrates how to use the Patch function for complex slices
 //
-//      The new default is to carry this information forward, we invoke this pitfall
-//      by creating such a situation and explicitly telling diff to discard the parent
-//      In memory constrained environments if the developer is careful, they can use
-//      the discard feature but unless you REALLY understand what's happening here, use
-//      the default.
-func ExampleComplexSlicePatch() {
-
+// NOTE: There is a potential pitfall here, take a close look at b[2]. If patching the
+//
+//	original, the operation will work intuitively however, in a merge situation we
+//	may not get everything we expect because it's a true diff between a and b and
+//	the diff log will not contain enough information to fully recreate b from an
+//	empty slice. This is exemplified in that the test "colors" is dropped in element
+//	3 of c. Change "colors" to "color" and see what happens. Keep in mind this only
+//	happens when we need to allocate a new complex element. In normal operations we
+//	fix for this by keeping a copy of said element in the diff log (as parent) and
+//	allocate such an element as a whole copy prior to applying any updates?
+//
+//	The new default is to carry this information forward, we invoke this pitfall
+//	by creating such a situation and explicitly telling diff to discard the parent
+//	In memory constrained environments if the developer is careful, they can use
+//	the discard feature but unless you REALLY understand what's happening here, use
+//	the default.
+func ExamplePatch_complexSlice() {
 	type Content struct {
 		Text   string `diff:",create"`
 		Number int    `diff:",create"`
@@ -312,12 +312,11 @@ func ExampleComplexSlicePatch() {
 
 	fmt.Printf("Patched %d entries and encountered %d errors", len(patchLog), patchLog.ErrorCount())
 
-	//Output: Patched 7 entries and encountered 3 errors
+	// Output: Patched 7 entries and encountered 3 errors
 }
 
-//ExampleComplexMapPatch demonstrates how to use the Patch function for complex slices.
-func ExampleComplexMapPatch() {
-
+// ExamplePatch_complexMap demonstrates how to use the Patch function for complex slices.
+func ExamplePatch_complexMap() {
 	type Key struct {
 		Value  string
 		weight int
@@ -359,7 +358,7 @@ func ExampleComplexMapPatch() {
 		Number: -76.490986,
 	}
 
-	//c := Attributes{}
+	// c := Attributes{}
 	c := Attributes{
 		Labels: make(map[Key]Content),
 	}
@@ -377,12 +376,11 @@ func ExampleComplexMapPatch() {
 
 	fmt.Printf("%#v", len(patchLog))
 
-	//Output: 7
+	// Output: 7
 }
 
-//ExamplePatch demonstrates how to use the Patch function
+// ExamplePatch demonstrates how to use the Patch function
 func ExamplePatch() {
-
 	type Key struct {
 		value  string
 		weight int
@@ -445,22 +443,22 @@ func ExamplePatch() {
 	}
 
 	c := Fruit{
-		//Labels: make(map[string]int),
+		// Labels: make(map[string]int),
 		Nutrients: []string{
 			"vitamin a",
 			"vitamin c",
 			"vitamin d",
 		},
 	}
-	//c.Labels["likes"] = 21
+	// c.Labels["likes"] = 21
 
 	d := a
 	d.Cycles = []Cycle{
-		Cycle{
+		{
 			Name:  "First",
 			Count: 45,
 		},
-		Cycle{
+		{
 			Name:  "Third",
 			Count: 4,
 		},
@@ -479,7 +477,7 @@ func ExamplePatch() {
 
 	fmt.Printf("%#v", len(patchLog))
 
-	//Output: 1
+	// Output: 1
 }
 
 func ExampleDiff() {
@@ -593,7 +591,7 @@ func ExampleFilter() {
 	// Output: diff.Changelog{diff.Change{Type:"update", Path:[]string{"id"}, From:1, To:2, parent:diff_test.Fruit{ID:1, Name:"Green Apple", Healthy:true, Nutrients:[]string{"vitamin c", "vitamin d"}, Tags:[]diff_test.Tag(nil)}}, diff.Change{Type:"create", Path:[]string{"nutrients", "2"}, From:interface {}(nil), To:"vitamin e", parent:interface {}(nil)}}
 }
 
-func ExamplePrivatePtr() {
+func Example_privatePtr() {
 	type number struct {
 		value *big.Int
 		exp   int32
