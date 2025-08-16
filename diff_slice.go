@@ -102,6 +102,7 @@ func (st *sliceTracker) has(s, v reflect.Value, d *Differ) bool {
 		x := s.Index(i)
 
 		var nd Differ
+		nd.TagName = d.TagName
 		nd.Filter = d.Filter
 		nd.customValueDiffers = d.customValueDiffers
 
