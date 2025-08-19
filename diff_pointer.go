@@ -48,6 +48,26 @@ func (d *Differ) diffPtr(path []string, a, b reflect.Value, parent interface{}) 
 		return nil
 	}
 
+	// If two pointers have already been compared, assume they have no changes
+	// This mirrors how reflect.DeepEqual works, and guarantees termination
+	aSeen, ok := d.pointersSeen[a.Pointer()]
+	if !ok {
+		aSeen = make(map[uintptr]struct{})
+		d.pointersSeen[a.Pointer()] = aSeen
+	}
+	bSeen, ok := d.pointersSeen[b.Pointer()]
+	if !ok {
+		bSeen = make(map[uintptr]struct{})
+		d.pointersSeen[b.Pointer()] = bSeen
+	}
+	_, aok := aSeen[b.Pointer()]
+	_, bok := aSeen[b.Pointer()]
+	if aok || bok {
+		return nil
+	}
+	aSeen[b.Pointer()] = struct{}{}
+	bSeen[a.Pointer()] = struct{}{}
+
 	return d.diff(path, reflect.Indirect(a), reflect.Indirect(b), parent)
 }
 

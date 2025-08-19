@@ -72,6 +72,7 @@ func (d *Differ) structValues(t string, path []string, a reflect.Value) error {
 	var nd Differ
 	nd.Filter = d.Filter
 	nd.customValueDiffers = d.customValueDiffers
+	nd.pointersSeen = d.pointersSeen
 
 	if t != CREATE && t != DELETE {
 		return ErrInvalidChangeType
