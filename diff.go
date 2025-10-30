@@ -86,6 +86,7 @@ type Differ struct {
 	FlattenEmbeddedStructs bool
 	ConvertCompatibleTypes bool
 	Filter                 FilterFunc
+	AllowPointerNilCompare bool
 }
 
 // Changelog stores a list of changed items
