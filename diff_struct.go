@@ -69,9 +69,18 @@ func (d *Differ) diffStruct(path []string, a, b reflect.Value, parent interface{
 }
 
 func (d *Differ) structValues(t string, path []string, a reflect.Value) error {
-	var nd Differ
-	nd.Filter = d.Filter
-	nd.customValueDiffers = d.customValueDiffers
+	nd := Differ{
+		TagName:                d.TagName,
+		SliceOrdering:          d.SliceOrdering,
+		DisableStructValues:    d.DisableStructValues,
+		customValueDiffers:     d.customValueDiffers,
+		AllowTypeMismatch:      d.AllowTypeMismatch,
+		DiscardParent:          d.DiscardParent,
+		StructMapKeys:          d.StructMapKeys,
+		FlattenEmbeddedStructs: d.FlattenEmbeddedStructs,
+		ConvertCompatibleTypes: d.ConvertCompatibleTypes,
+		Filter:                 d.Filter,
+	}
 
 	if t != CREATE && t != DELETE {
 		return ErrInvalidChangeType
