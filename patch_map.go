@@ -20,6 +20,9 @@ func (d *Differ) renderMap(c *ChangeValue) (m, k, v *reflect.Value) {
 			return
 		}
 		c.key = field.Elem()
+	} else if kt.Kind() == reflect.String {
+		c.key = field.Elem()
+		c.key.SetString(c.change.Path[c.pos])
 	} else {
 		c.key = reflect.ValueOf(c.change.Path[c.pos])
 	}

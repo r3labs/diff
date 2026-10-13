@@ -349,3 +349,108 @@ func TestPatch(t *testing.T) {
 		assert.False(t, patchLog.HasErrors())
 	})
 }
+
+func TestPatchNamedStringMapKeys(t *testing.T) {
+	type Key string
+
+	cases := []struct {
+		name       string
+		from, to   map[Key]string
+		changeType string
+	}{
+		{"create", map[Key]string{}, map[Key]string{"key": "created"}, diff.CREATE},
+		{"create-nil-map", nil, map[Key]string{"key": "created"}, diff.CREATE},
+		{"update", map[Key]string{"key": "before"}, map[Key]string{"key": "after"}, diff.UPDATE},
+		{"delete", map[Key]string{"key": "deleted"}, map[Key]string{}, diff.DELETE},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			d, err := diff.NewDiffer()
+			require.NoError(t, err)
+
+			changelog, err := d.Diff(tc.from, tc.to)
+			require.NoError(t, err)
+			require.Len(t, changelog, 1)
+			assert.Equal(t, tc.changeType, changelog[0].Type)
+			assert.Equal(t, []string{"key"}, changelog[0].Path)
+
+			patchLog := d.Patch(changelog, &tc.from)
+			require.Len(t, patchLog, len(changelog))
+			assert.Zero(t, patchLog.ErrorCount())
+			for _, entry := range patchLog {
+				assert.NoError(t, entry.Errors)
+			}
+			assert.Equal(t, tc.to, tc.from)
+		})
+	}
+}
+
+func TestPatchNamedStringMapNestedStructSlice(t *testing.T) {
+	type Key string
+	type Inner struct {
+		Value string
+		Other string
+	}
+	type Slice []Inner
+	type Map map[Key]Slice
+	type Outer struct {
+		Map Map
+	}
+
+	cases := []struct {
+		name    string
+		options []func(d *diff.Differ) error
+	}{
+		{name: "default"},
+		{name: "disable-struct-values", options: []func(d *diff.Differ) error{diff.DisableStructValues()}},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			from := Outer{Map: Map{"key": {{Value: "value", Other: "other"}}}}
+			to := Outer{Map: Map{"key": {
+				{Value: "value", Other: "other"},
+				{Value: "value2", Other: "other2"},
+			}}}
+
+			d, err := diff.NewDiffer(tc.options...)
+			require.NoError(t, err)
+
+			changelog, err := d.Diff(from, to)
+			require.NoError(t, err)
+			require.NotEmpty(t, changelog)
+
+			patchLog := d.Patch(changelog, &from)
+			require.Len(t, patchLog, len(changelog))
+			assert.Zero(t, patchLog.ErrorCount())
+			for _, entry := range patchLog {
+				assert.NoError(t, entry.Errors)
+			}
+			assert.Equal(t, to, from)
+		})
+	}
+}
+
+func TestPatchStructMapKeys(t *testing.T) {
+	type Key struct {
+		Name string
+	}
+	from := map[Key]string{{Name: "update"}: "before", {Name: "delete"}: "removed"}
+	to := map[Key]string{{Name: "update"}: "after", {Name: "create"}: "added"}
+
+	d, err := diff.NewDiffer(diff.StructMapKeySupport())
+	require.NoError(t, err)
+
+	changelog, err := d.Diff(from, to)
+	require.NoError(t, err)
+	require.Len(t, changelog, 3)
+
+	patchLog := d.Patch(changelog, &from)
+	require.Len(t, patchLog, len(changelog))
+	assert.Zero(t, patchLog.ErrorCount())
+	for _, entry := range patchLog {
+		assert.NoError(t, entry.Errors)
+	}
+	assert.Equal(t, to, from)
+}
