@@ -131,14 +131,16 @@ func (c *ChangeValue) Set(value reflect.Value, convertCompatibleTypes bool) {
 				c.target.Set(reflect.Zero(c.target.Type()))
 				c.SetFlag(FlagApplied)
 				return
-			} else if !value.Type().ConvertibleTo(c.target.Elem().Type()) {
+			}
+			elementType := c.target.Type().Elem()
+			if !value.Type().ConvertibleTo(elementType) {
 				c.AddError(fmt.Errorf("Value of type %s is not convertible to %s", value.Type().String(), c.target.Type().String()))
 				c.SetFlag(FlagFailed)
 				return
 			}
 
-			tv := reflect.New(c.target.Elem().Type())
-			tv.Elem().Set(value.Convert(c.target.Elem().Type()))
+			tv := reflect.New(elementType)
+			tv.Elem().Set(value.Convert(elementType))
 			c.target.Set(tv)
 		} else {
 			if !value.Type().ConvertibleTo(c.target.Type()) {
